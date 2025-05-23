@@ -9,12 +9,14 @@
 <form id="registerForm" method="post">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-    <!-- Username + check button -->
+    <!-- Username + AJAX check -->
     <div class="form-group mb-3">
         <label asp-for="Input.Username"></label>
-        <input asp-for="Input.Username" class="form-control" />
+        <input asp-for="Input.Username" class="form-control" id="Input_Username" />
         <span asp-validation-for="Input.Username" class="text-danger"></span>
-        <button type="button" id="checkUsername" class="btn btn-secondary mt-1">Check Username</button>
+        <button type="button" id="checkUsername" class="btn btn-secondary mt-1">
+            Check Username
+        </button>
         <div id="usernameFeedback" class="mt-1"></div>
     </div>
 
@@ -28,10 +30,61 @@
     <!-- Account Type -->
     <div class="form-group mb-3">
         <label asp-for="Input.AccountType"></label>
-        <select asp-for="Input.AccountType" asp-items="Model.Input.AccountTypes" class="form-control">
-            <option value=\"\">-- Select account type --</option>
+        <select asp-for="Input.AccountType"
+                asp-items="Model.Input.AccountTypes"
+                class="form-control"
+                id="accountTypeSelect">
+            <option value="">-- Select account type --</option>
         </select>
         <span asp-validation-for="Input.AccountType" class="text-danger"></span>
+    </div>
+
+    <!-- Critic-only sliders -->
+    <div id="criticSliders" class="mb-4" style="display:none;">
+        <h5>Your Rating Weights</h5>
+        <div class="d-flex justify-content-between">
+
+            <!-- Food -->
+            <div class="text-center">
+                <label for="Food">Food</label>
+                <input asp-for="Input.Food" type="range" id="Food"
+                       min="1" max="5" step="1" class="form-range" />
+                <div id="FoodVal">@Model.Input.Food</div>
+            </div>
+
+            <!-- Service -->
+            <div class="text-center">
+                <label for="Service">Service</label>
+                <input asp-for="Input.Service" type="range" id="Service"
+                       min="1" max="5" step="1" class="form-range" />
+                <div id="ServiceVal">@Model.Input.Service</div>
+            </div>
+
+            <!-- Price -->
+            <div class="text-center">
+                <label for="Price">Price</label>
+                <input asp-for="Input.Price" type="range" id="Price"
+                       min="1" max="5" step="1" class="form-range" />
+                <div id="PriceVal">@Model.Input.Price</div>
+            </div>
+
+            <!-- Condition -->
+            <div class="text-center">
+                <label for="Condition">Condition</label>
+                <input asp-for="Input.Condition" type="range" id="Condition"
+                       min="1" max="5" step="1" class="form-range" />
+                <div id="ConditionVal">@Model.Input.Condition</div>
+            </div>
+
+            <!-- Atmosphere -->
+            <div class="text-center">
+                <label for="Atmosphere">Atmosphere</label>
+                <input asp-for="Input.Atmosphere" type="range" id="Atmosphere"
+                       min="1" max="5" step="1" class="form-range" />
+                <div id="AtmosphereVal">@Model.Input.Atmosphere</div>
+            </div>
+
+        </div>
     </div>
 
     <!-- Password -->
@@ -48,28 +101,55 @@
         <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
     </div>
 
-    <button id="registerSubmit" type="submit" class="btn btn-primary" disabled>Register</button>
+    <button id="registerSubmit" type="submit" class="btn btn-primary">Register</button>
 </form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        // Username availability check
         document.getElementById('checkUsername').addEventListener('click', async () => {
-            const uname = document.getElementById('Input_Username').value;
-            const resp  = await fetch(`?handler=CheckUsername&username=${encodeURIComponent(uname)}`);
-            const { available } = await resp.json();
-            const fb   = document.getElementById('usernameFeedback');
-            const btn  = document.getElementById('registerSubmit');
+          const uname = document.getElementById('Input_Username').value;
+          const resp  = await fetch(`?handler=CheckUsername&username=${encodeURIComponent(uname)}`);
+          const { available } = await resp.json();
+          const fb = document.getElementById('usernameFeedback');
+          const btn = document.getElementById('registerSubmit');
+          if (available) {
+            fb.textContent = '✅ Username is available.';
+            fb.className = 'text-success';
+            btn.disabled = false;
+          } else {
+            fb.textContent = '❌ Username is already taken.';
+            fb.className = 'text-danger';
+            btn.disabled = true;
+          }
+        });
 
-            if (available) {
-                fb.textContent = '✅ Username is available.';
-                fb.className   = 'text-success';
-                btn.disabled   = false;
-            } else {
-                fb.textContent = '❌ Username is already taken.';
-                fb.className   = 'text-danger';
-                btn.disabled   = true;
+        // Show/hide Critic sliders
+        const accountType = document.getElementById('accountTypeSelect');
+        const sliders     = document.getElementById('criticSliders');
+        accountType.addEventListener('change', () => {
+          sliders.style.display = accountType.value === 'Critic' ? 'block' : 'none';
+        });
+
+        // Interconnected slider logic
+        const cats = ["Food","Service","Price","Condition","Atmosphere"];
+        const vals = cats.map(c => document.getElementById(c));
+        const lbls = cats.map(c => document.getElementById(c + 'Val'));
+
+        cats.forEach((cat, idx) => {
+          vals[idx].addEventListener('input', () => {
+            const newVal = +vals[idx].value;
+            const oldVal = +lbls[idx].textContent;
+            const diff   = newVal - oldVal;
+            if (diff === 0) return;
+            const otherIdx = vals.findIndex((el,i) => i!==idx && +el.value === newVal);
+            if (otherIdx > -1) {
+              vals[otherIdx].value = +vals[otherIdx].value - diff;
+              lbls[otherIdx].textContent = vals[otherIdx].value;
             }
+            lbls[idx].textContent = newVal;
+          });
         });
     </script>
 }

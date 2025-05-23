@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SoftEng2025.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,7 @@ builder.Services.Configure<PasswordHasherOptions>(opts =>
 });
 
 // 4) Razor Pages, middleware, role‐seeding, etc.
+builder.Services.AddHttpClient();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();

@@ -1,10 +1,98 @@
 ﻿@page
-@model IndexModel
+@model SoftEng2025.Pages.IndexModel
 @{
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="mb-4 d-flex align-items-center">
+    <form class="flex-grow-1 me-3" method="get">
+        <div class="input-group">
+            <input type="text"
+                   name="Search"
+                   value="@Model.Search"
+                   class="form-control"
+                   placeholder="Search by name..." />
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </div>
+    </form>
+
+    <form method="get" class="d-flex align-items-center">
+        <select name="FilterType" class="form-select me-2"
+                onchange="this.form.submit()">
+            <option value="">All types</option>
+            @foreach (var t in Model.AllTypes)
+            {
+                <option value="@t" selected="@(t == Model.FilterType)">@t</option>
+            }
+        </select>
+        <input type="hidden" name="Search" value="@Model.Search" />
+        <input type="hidden" name="Page" value="1" />
+    </form>
 </div>
+
+@if (!Model.Cards.Any())
+{
+    <div class="alert alert-info">No restaurants found.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-5 g-4">
+        @foreach (var card in Model.Cards)
+        {
+            <div class="col">
+                <div class="card h-100">
+                    @if (card.ImageBase64 != null)
+                    {
+                        <img src="@card.ImageBase64"
+                             class="card-img-top"
+                             alt="@card.Name"
+                             style="height:140px; object-fit:cover;" />
+                    }
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">@card.Name</h5>
+                        <p class="card-text mb-1"><strong>Owner:</strong> @card.OwnerName</p>
+                        <p class="card-text mb-1"><strong>Type:</strong> @card.Type</p>
+                        <p class="card-text mb-1"><strong>Location:</strong> @card.Location</p>
+                        <p class="card-text mb-1">
+                            <strong>Rating:</strong> @(
+                                                     card.AverageRating
+                                                         .ToString("F1")
+                                                     )
+                            <span class="text-warning">★</span>
+                        </p>
+                        <p class="card-text mb-3">
+                            <small>@card.ReviewCount review@(card.ReviewCount == 1 ? "" : "s")</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                <a class="page-link"
+                   href="?Search=@Model.Search&FilterType=@Model.FilterType&Page=@(Model.Page - 1)">
+                    Previous
+                </a>
+            </li>
+            @for (int p = 1; p <= Model.TotalPages; p++)
+            {
+                <li class="page-item @(p == Model.Page ? "active" : "")">
+                    <a class="page-link"
+                       href="?Search=@Model.Search&FilterType=@Model.FilterType&Page=@p">
+                        @p
+                    </a>
+                </li>
+            }
+            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link"
+                   href="?Search=@Model.Search&FilterType=@Model.FilterType&Page=@(Model.Page + 1)">
+                    Next
+                </a>
+            </li>
+        </ul>
+    </nav>
+}

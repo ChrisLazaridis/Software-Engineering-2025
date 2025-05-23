@@ -1,0 +1,113 @@
+﻿@page
+@model SoftEng2025.Areas.Identity.Pages.Account.Manage.IndexModel
+@{
+    ViewData["Title"] = "Manage Your Profile";
+}
+
+<h2>@ViewData["Title"]</h2>
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success">@Model.StatusMessage</div>
+}
+
+<form method="post" class="mt-4">
+
+    <!-- Nickname only -->
+    <div class="mb-3">
+        <label asp-for="Input.Nickname" class="form-label"></label>
+        <input asp-for="Input.Nickname" class="form-control" />
+        <span asp-validation-for="Input.Nickname" class="text-danger"></span>
+    </div>
+
+    @if (Model.Input.IsCritic)
+    {
+        <h4 class="mt-4">Adjust Your Rating Weights</h4>
+        <div id="slider-container" class="d-flex justify-content-between align-items-end">
+
+            <!-- Food -->
+            <div class="text-center">
+                <label for="Food">Food</label>
+                <input asp-for="Input.Food"
+                       type="range" id="Food"
+                       min="1" max="5" step="1"
+                       class="form-range" />
+                <div id="FoodValue">@Model.Input.Food</div>
+            </div>
+
+            <!-- Service -->
+            <div class="text-center">
+                <label for="Service">Service</label>
+                <input asp-for="Input.Service"
+                       type="range" id="Service"
+                       min="1" max="5" step="1"
+                       class="form-range" />
+                <div id="ServiceValue">@Model.Input.Service</div>
+            </div>
+
+            <!-- Price -->
+            <div class="text-center">
+                <label for="Price">Price</label>
+                <input asp-for="Input.Price"
+                       type="range" id="Price"
+                       min="1" max="5" step="1"
+                       class="form-range" />
+                <div id="PriceValue">@Model.Input.Price</div>
+            </div>
+
+            <!-- Condition -->
+            <div class="text-center">
+                <label for="Condition">Condition</label>
+                <input asp-for="Input.Condition"
+                       type="range" id="Condition"
+                       min="1" max="5" step="1"
+                       class="form-range" />
+                <div id="ConditionValue">@Model.Input.Condition</div>
+            </div>
+
+            <!-- Atmosphere -->
+            <div class="text-center">
+                <label for="Atmosphere">Atmosphere</label>
+                <input asp-for="Input.Atmosphere"
+                       type="range" id="Atmosphere"
+                       min="1" max="5" step="1"
+                       class="form-range" />
+                <div id="AtmosphereValue">@Model.Input.Atmosphere</div>
+            </div>
+
+        </div>
+    }
+
+    <button type="submit" class="btn btn-primary mt-4">Save changes</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const cats   = ["Food","Service","Price","Condition","Atmosphere"];
+        const values = cats.map(c => parseInt(document.getElementById(c).value, 10));
+
+        cats.forEach((cat, idx) => {
+          const slider  = document.getElementById(cat);
+          const display = document.getElementById(cat + "Value");
+
+          slider.addEventListener("input", () => {
+            const newVal = parseInt(slider.value, 10);
+            const oldVal = values[idx];
+            const diff   = newVal - oldVal;
+            if (diff === 0) return;
+
+            // Find the other index that currently holds newVal
+            const otherIdx = values.findIndex((v, i) => i !== idx && v === newVal);
+            if (otherIdx >= 0) {
+              values[otherIdx] -= diff;
+              const otherCat = cats[otherIdx];
+              document.getElementById(otherCat).value          = values[otherIdx];
+              document.getElementById(otherCat + "Value").innerText = values[otherIdx];
+            }
+
+            values[idx] = newVal;
+            display.innerText = newVal;
+          });
+        });
+    </script>
+}

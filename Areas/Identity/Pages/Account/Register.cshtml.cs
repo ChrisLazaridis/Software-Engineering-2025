@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -65,6 +65,13 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
             [Display(Name = "Confirm password")]
             [Compare("Password", ErrorMessage = "Passwords do not match.")]
             public string ConfirmPassword { get; set; }
+
+            // ─── Critic-only weights ────────────────────────────────────
+            [Range(1, 5)] public int Food { get; set; } = 5;
+            [Range(1, 5)] public int Service { get; set; } = 4;
+            [Range(1, 5)] public int Price { get; set; } = 3;
+            [Range(1, 5)] public int Condition { get; set; } = 2;
+            [Range(1, 5)] public int Atmosphere { get; set; } = 1;
         }
 
         public void OnGet(string returnUrl = null)
@@ -87,7 +94,6 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             returnUrl = returnUrl ?? Url.Content("~/");
-
             if (!ModelState.IsValid)
                 return Page();
 
@@ -101,10 +107,8 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
             if (result.Succeeded)
             {
                 _logger.LogInformation("New user created.");
-
                 await _userManager.AddToRoleAsync(user, Input.AccountType);
 
-                // Insert profile row
                 switch (Input.AccountType)
                 {
                     case "Critic":
@@ -112,9 +116,14 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
                         {
                             UserId = user.Id,
                             Username = Input.Username,
-                            FirstName = "", // you can prompt these if needed
+                            FirstName = "", // can prompt these later
                             LastName = "",
-                            Email = Input.Email
+                            Email = Input.Email,
+                            Food = Input.Food,
+                            Service = Input.Service,
+                            Price = Input.Price,
+                            Condition = Input.Condition,
+                            Atmosphere = Input.Atmosphere
                         });
                         break;
                     case "Entrepreneur":
@@ -140,7 +149,6 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
                 }
 
                 await _db.SaveChangesAsync();
-
                 await _signInManager.SignInAsync(user, isPersistent: false);
                 return LocalRedirect(returnUrl);
             }
