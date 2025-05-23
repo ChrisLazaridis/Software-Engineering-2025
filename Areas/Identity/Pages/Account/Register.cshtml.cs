@@ -1,16 +1,10 @@
-// Areas/Identity/Pages/Account/Register.cshtml.cs
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using SoftEng2025.Data;
 using SoftEng2025.Models;
 
@@ -19,8 +13,8 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
     [AllowAnonymous]
     public class RegisterModel : PageModel
     {
-        private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
         private readonly ILogger<RegisterModel> _logger;
         private readonly ApplicationDbContext _db;
 
@@ -34,8 +28,6 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _db = db;
-
-            // Ensure Input is never null in the view
             Input = new InputModel();
         }
 
@@ -43,10 +35,13 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
         public InputModel Input { get; set; }
 
         public string ReturnUrl { get; set; }
-        public IList<AuthenticationScheme> ExternalLogins { get; set; }
 
         public class InputModel
         {
+            [Required]
+            [Display(Name = "Username")]
+            public string Username { get; set; }
+
             [Required, EmailAddress]
             [Display(Name = "Email")]
             public string Email { get; set; }
@@ -62,14 +57,6 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
                 new SelectListItem("Admin",       "Admin")
             };
 
-            [Required]
-            [Display(Name = "First name")]
-            public string FirstName { get; set; }
-
-            [Required]
-            [Display(Name = "Last name")]
-            public string LastName { get; set; }
-
             [Required, StringLength(100, MinimumLength = 6)]
             [DataType(DataType.Password)]
             public string Password { get; set; }
@@ -80,30 +67,33 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
             public string ConfirmPassword { get; set; }
         }
 
-        public async Task OnGetAsync(string returnUrl = null)
+        public void OnGet(string returnUrl = null)
         {
-            // Re-initialize Input so AccountTypes is set
-            Input = new InputModel();
+            ReturnUrl = returnUrl ?? Url.Content("~/");
+        }
 
-            ReturnUrl = returnUrl;
-            ExternalLogins = (await _signInManager
-                                   .GetExternalAuthenticationSchemesAsync())
-                            .ToList();
+        // AJAX endpoint to verify username uniqueness
+        public async Task<JsonResult> OnGetCheckUsernameAsync(string username)
+        {
+            bool taken =
+                await _db.Critics.AnyAsync(c => c.Username == username)
+                || await _db.Entrepreneurs.AnyAsync(e => e.Username == username)
+                || await _db.Admins.AnyAsync(a => a.Username == username)
+                || await _userManager.Users.AnyAsync(u => u.UserName == username);
+
+            return new JsonResult(new { available = !taken });
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             returnUrl = returnUrl ?? Url.Content("~/");
-            ExternalLogins = (await _signInManager
-                                   .GetExternalAuthenticationSchemesAsync())
-                            .ToList();
 
             if (!ModelState.IsValid)
                 return Page();
 
             var user = new IdentityUser
             {
-                UserName = Input.Email,
+                UserName = Input.Username,
                 Email = Input.Email
             };
 
@@ -112,41 +102,38 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
             {
                 _logger.LogInformation("New user created.");
 
-                // 1) Add to selected Identity role
                 await _userManager.AddToRoleAsync(user, Input.AccountType);
 
-                // 2) Create the profile row in your domain tables
+                // Insert profile row
                 switch (Input.AccountType)
                 {
                     case "Critic":
                         _db.Critics.Add(new Critic
                         {
                             UserId = user.Id,
-                            Username = user.UserName,
-                            FirstName = Input.FirstName,
-                            LastName = Input.LastName,
+                            Username = Input.Username,
+                            FirstName = "", // you can prompt these if needed
+                            LastName = "",
                             Email = Input.Email
                         });
                         break;
-
                     case "Entrepreneur":
                         _db.Entrepreneurs.Add(new Entrepreneur
                         {
                             UserId = user.Id,
-                            Username = user.UserName,
-                            FirstName = Input.FirstName,
-                            LastName = Input.LastName,
+                            Username = Input.Username,
+                            FirstName = "",
+                            LastName = "",
                             Email = Input.Email
                         });
                         break;
-
                     case "Admin":
                         _db.Admins.Add(new Admin
                         {
                             UserId = user.Id,
-                            Username = user.UserName,
-                            FirstName = Input.FirstName,
-                            LastName = Input.LastName,
+                            Username = Input.Username,
+                            FirstName = "",
+                            LastName = "",
                             Email = Input.Email
                         });
                         break;
@@ -154,14 +141,12 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
 
                 await _db.SaveChangesAsync();
 
-                // 3) Sign in
                 await _signInManager.SignInAsync(user, isPersistent: false);
                 return LocalRedirect(returnUrl);
             }
 
-            // If creation failed, show errors
-            foreach (var error in result.Errors)
-                ModelState.AddModelError(string.Empty, error.Description);
+            foreach (var err in result.Errors)
+                ModelState.AddModelError(string.Empty, err.Description);
 
             return Page();
         }

@@ -6,88 +6,70 @@
 
 <h1>@ViewData["Title"]</h1>
 
-<div class="row">
-    <div class="col-md-4">
-        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-            <h2>Create a new account.</h2>
-            <hr />
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+<form id="registerForm" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-            <div class="form-group mb-3">
-                <label asp-for="Input.AccountType"></label>
-                <select asp-for="Input.AccountType" asp-items="Model.Input.AccountTypes" class="form-control">
-                    <option value="">-- Select account type --</option>
-                </select>
-                <span asp-validation-for="Input.AccountType" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Input.FirstName" class="form-control" placeholder="First name" />
-                <label asp-for="Input.FirstName">First name</label>
-                <span asp-validation-for="Input.FirstName" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Input.LastName" class="form-control" placeholder="Last name" />
-                <label asp-for="Input.LastName">Last name</label>
-                <span asp-validation-for="Input.LastName" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="name@example.com" />
-                <label asp-for="Input.Email">Email address</label>
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" placeholder="Password" />
-                <label asp-for="Input.Password">Password</label>
-                <span asp-validation-for="Input.Password" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="Confirm Password" />
-                <label asp-for="Input.ConfirmPassword">Confirm password</label>
-                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
-            </div>
-
-            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </form>
+    <!-- Username + check button -->
+    <div class="form-group mb-3">
+        <label asp-for="Input.Username"></label>
+        <input asp-for="Input.Username" class="form-control" />
+        <span asp-validation-for="Input.Username" class="text-danger"></span>
+        <button type="button" id="checkUsername" class="btn btn-secondary mt-1">Check Username</button>
+        <div id="usernameFeedback" class="mt-1"></div>
     </div>
 
-    <div class="col-md-6 offset-md-2">
-        <section>
-            <h3>Use another service to register</h3>
-            <hr />
-            @if ((Model.ExternalLogins?.Count ?? 0) == 0)
-            {
-                <p>
-                    There are no external authentication services configured.
-                    See this <a href="https://go.microsoft.com/fwlink/?LinkID=532715">
-                        article about setting up this ASP.NET application to support external logins
-                    </a>.
-                </p>
-            }
-            else
-            {
-                <form id="external-account" asp-page="./ExternalLogin"
-                      asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                    <div class="mb-3">
-                        @foreach (var provider in Model.ExternalLogins!)
-                        {
-                            <button type="submit" class="btn btn-outline-secondary me-2"
-                                    name="provider" value="@provider.Name"
-                                    title="Log in using your @provider.DisplayName account">
-                                @provider.DisplayName
-                            </button>
-                        }
-                    </div>
-                </form>
-            }
-        </section>
+    <!-- Email -->
+    <div class="form-group mb-3">
+        <label asp-for="Input.Email"></label>
+        <input asp-for="Input.Email" class="form-control" />
+        <span asp-validation-for="Input.Email" class="text-danger"></span>
     </div>
-</div>
+
+    <!-- Account Type -->
+    <div class="form-group mb-3">
+        <label asp-for="Input.AccountType"></label>
+        <select asp-for="Input.AccountType" asp-items="Model.Input.AccountTypes" class="form-control">
+            <option value=\"\">-- Select account type --</option>
+        </select>
+        <span asp-validation-for="Input.AccountType" class="text-danger"></span>
+    </div>
+
+    <!-- Password -->
+    <div class="form-group mb-3">
+        <label asp-for="Input.Password"></label>
+        <input asp-for="Input.Password" type="password" class="form-control" />
+        <span asp-validation-for="Input.Password" class="text-danger"></span>
+    </div>
+
+    <!-- Confirm Password -->
+    <div class="form-group mb-3">
+        <label asp-for="Input.ConfirmPassword"></label>
+        <input asp-for="Input.ConfirmPassword" type="password" class="form-control" />
+        <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+    </div>
+
+    <button id="registerSubmit" type="submit" class="btn btn-primary" disabled>Register</button>
+</form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('checkUsername').addEventListener('click', async () => {
+            const uname = document.getElementById('Input_Username').value;
+            const resp  = await fetch(`?handler=CheckUsername&username=${encodeURIComponent(uname)}`);
+            const { available } = await resp.json();
+            const fb   = document.getElementById('usernameFeedback');
+            const btn  = document.getElementById('registerSubmit');
+
+            if (available) {
+                fb.textContent = '✅ Username is available.';
+                fb.className   = 'text-success';
+                btn.disabled   = false;
+            } else {
+                fb.textContent = '❌ Username is already taken.';
+                fb.className   = 'text-danger';
+                btn.disabled   = true;
+            }
+        });
+    </script>
 }

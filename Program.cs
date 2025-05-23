@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using SoftEng2025.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1) Configure EF Core to use PostgreSQL + PostGIS (via NetTopologySuite)
+// 1) Configure EF Core
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -15,27 +16,32 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     )
 );
 
-// 2) Add developer‐only DB exception page (for EF migrations errors in dev)
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-// 3) Configure Identity with Roles stored in your existing schema
+// 2) Add Identity
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
-{
-    options.SignIn.RequireConfirmedAccount = true;
-})
+    {
+        // (other IdentityOptions you may have…)
+        options.SignIn.RequireConfirmedAccount = false;
+    })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// 4) Add Razor Pages
+// 3) Force V3 hasher + 100k iterations
+builder.Services.Configure<PasswordHasherOptions>(opts =>
+{
+    // Use the ASP.NET Core 3+/V3 format blob
+    opts.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV3;
+    // Match .NET 7’s default 100 000 rounds (override if you’ve changed it)
+    opts.IterationCount = 100_000;
+});
+
+// 4) Razor Pages, middleware, role‐seeding, etc.
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
-
-// 5) Configure middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-    app.UseMigrationsEndPoint();    // optional: shows EF migration errors in dev
+    app.UseMigrationsEndPoint();
 }
 else
 {
@@ -44,26 +50,20 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
-
+app.UseStaticFiles();              // ← Serves CSS/JS/images from wwwroot
 app.UseRouting();
-
-// 6) Enable authentication & authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 7) Seed your roles on startup
+app.MapRazorPages();
+
+// Seed roles on startup
 using (var scope = app.Services.CreateScope())
 {
     var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    string[] roles = { "Critic", "Entrepreneur", "Admin" };
-    foreach (var role in roles)
-    {
+    foreach (var role in new[] { "Critic", "Entrepreneur", "Admin" })
         if (!await roleMgr.RoleExistsAsync(role))
-        {
             await roleMgr.CreateAsync(new IdentityRole(role));
-        }
-    }
 }
 
 app.MapRazorPages();
