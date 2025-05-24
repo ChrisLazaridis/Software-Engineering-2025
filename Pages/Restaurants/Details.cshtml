@@ -73,6 +73,12 @@
 
                     <dt class="col-6">Location</dt>
                     <dd class="col-6">@Model.Address</dd>
+                    <map
+                        lat="@Model.Restaurant.Location.Y"
+                        lon="@Model.Restaurant.Location.X"
+                        width="100%"    @* or "250px" *@
+                        height="150px"  @* match your card image *@
+                    ></map>
                 </dl>
 
             </div>
