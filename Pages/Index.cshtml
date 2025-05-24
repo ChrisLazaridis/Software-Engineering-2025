@@ -26,7 +26,7 @@
             }
         </select>
         <input type="hidden" name="Search" value="@Model.Search" />
-        <input type="hidden" name="Page" value="1" />
+        <input type="hidden" name="CurrentPage" value="1" />
     </form>
 </div>
 
@@ -39,8 +39,12 @@ else
     <div class="row row-cols-1 row-cols-md-5 g-4">
         @foreach (var card in Model.Cards)
         {
+            
             <div class="col">
-                <div class="card h-100">
+            <div class="card h-100">
+                <a asp-page="/Restaurants/Details"
+                   asp-route-id="@card.Id"
+                   class="restaurant-card-link">
                     @if (card.ImageBase64 != null)
                     {
                         <img src="@card.ImageBase64"
@@ -48,6 +52,7 @@ else
                              alt="@card.Name"
                              style="height:140px; object-fit:cover;" />
                     }
+            </a>
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">@card.Name</h5>
                         <p class="card-text mb-1"><strong>Owner:</strong> @card.OwnerName</p>
@@ -66,30 +71,31 @@ else
                     </div>
                 </div>
             </div>
+    
         }
     </div>
 
     <!-- Pagination -->
     <nav aria-label="Page navigation" class="mt-4">
         <ul class="pagination justify-content-center">
-            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+            <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
                 <a class="page-link"
-                   href="?Search=@Model.Search&FilterType=@Model.FilterType&Page=@(Model.Page - 1)">
+                   href="?Search=@Model.Search&FilterType=@Model.FilterType&CurrentPage=@(Model.CurrentPage - 1)">
                     Previous
                 </a>
             </li>
             @for (int p = 1; p <= Model.TotalPages; p++)
             {
-                <li class="page-item @(p == Model.Page ? "active" : "")">
+                <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
                     <a class="page-link"
-                       href="?Search=@Model.Search&FilterType=@Model.FilterType&Page=@p">
+                       href="?Search=@Model.Search&FilterType=@Model.FilterType&CurrentPage=@p">
                         @p
                     </a>
                 </li>
             }
-            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+            <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
                 <a class="page-link"
-                   href="?Search=@Model.Search&FilterType=@Model.FilterType&Page=@(Model.Page + 1)">
+                   href="?Search=@Model.Search&FilterType=@Model.FilterType&CurrentPage=@(Model.CurrentPage + 1)">
                     Next
                 </a>
             </li>

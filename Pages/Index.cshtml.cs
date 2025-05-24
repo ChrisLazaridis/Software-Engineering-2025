@@ -32,23 +32,24 @@ namespace SoftEng2025.Pages
             public string ImageBase64 { get; set; }
         }
 
-        // Input
-        [BindProperty(SupportsGet = true)]
+        // Properties (no binding attributes needed)
         public string Search { get; set; }
-
-        [BindProperty(SupportsGet = true)]
         public string FilterType { get; set; }
-
-        [BindProperty(SupportsGet = true)]
-        public int Page { get; set; } = 1;
-
-        // Output
+        public int CurrentPage { get; set; }
         public List<RestaurantCard> Cards { get; set; }
         public int TotalPages { get; set; }
         public List<string> AllTypes { get; set; }
 
-        public async Task OnGetAsync()
+        public async Task OnGetAsync(string search, string filterType, int currentPage = 1)
         {
+            // Assign parameters to properties
+            Search = search;
+            FilterType = filterType;
+            CurrentPage = currentPage;
+
+            // Debug: Log the incoming values
+            Console.WriteLine($"Search: {Search}, FilterType: {FilterType}, CurrentPage: {CurrentPage}");
+
             // 1) Gather all distinct types for filter dropdown
             AllTypes = await _db.Restaurants
                                .Select(r => r.RestaurantType)
@@ -76,18 +77,19 @@ namespace SoftEng2025.Pages
             var totalCount = await query.CountAsync();
             TotalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
 
+            // Clamp CurrentPage to valid range
+            CurrentPage = Math.Clamp(CurrentPage, 1, Math.Max(TotalPages, 1));
+
             var pageData = await query
-                .Skip((Page - 1) * PageSize)
+                .Skip((CurrentPage - 1) * PageSize)
                 .Take(PageSize)
                 .ToListAsync();
 
-            // 6) Project to card view model (clamp + round rating + include review count)
+            // 6) Project to card view model
             Cards = pageData.Select(r =>
             {
-                // clamp at 5.0 then round to one decimal place
                 var normalized = Math.Min(r.AverageRating, 5.0);
-                var rounded = Math.Round(normalized, 1);
-
+                var rounded = Math.Round(normalized, 2);
                 return new RestaurantCard
                 {
                     Id = r.RestaurantId,

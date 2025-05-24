@@ -1,0 +1,72 @@
+﻿@page "{id:int}"
+@model SoftEng2025.Pages.Restaurants.DetailsModel
+@using Microsoft.AspNetCore.Authorization
+
+<div class="d-flex" style="gap:1rem;">
+
+    <!-- Left sidebar -->
+    <aside class="flex-shrink-0" style="width: 300px; padding:1rem; border-right:1px solid #ccc;">
+        <h2>@Model.Restaurant.Name</h2>
+        <p><strong>Owner:</strong> @Model.Restaurant.Entrepreneur.FirstName @Model.Restaurant.Entrepreneur.LastName</p>
+        <p><strong>Type:</strong> @Model.Restaurant.RestaurantType</p>
+        <p><strong>Seats:</strong> @Model.Restaurant.Seats</p>
+        <p><strong>Avg. Rating:</strong> @Model.Restaurant.AverageRating:F1 (@Model.Restaurant.ReviewCount reviews)</p>
+        @if (!string.IsNullOrEmpty(Model.Restaurant.Website))
+        {
+            <p><a href="@Model.Restaurant.Website" target="_blank">Visit Website</a></p>
+        }
+    </aside>
+
+    <!-- Right reviews panel -->
+    <section class="flex-fill" style="max-height: 80vh; overflow-y: auto; padding:1rem;">
+        <h3>Reviews</h3>
+
+        @* Critic: Add Review button placeholder *@
+        @if (User.IsInRole("Critic"))
+        {
+            <button class="btn btn-primary mb-3" disabled>
+                + Add Review
+            </button>
+        }
+
+        @* Loop through reviews *@
+        @foreach (var review in Model.Restaurant.Reviews.OrderByDescending(r => r.CreatedAt))
+        {
+            <div class="mb-4 p-3 border rounded">
+                <p>
+                    <strong>@review.Critic.FirstName @review.Critic.LastName</strong>
+                    <span class="text-muted">(@review.CreatedAt:g)</span>
+                </p>
+                <ul>
+                    <li>Food: @review.Food:F1</li>
+                    <li>Service: @review.Service:F1</li>
+                    <li>Price: @review.Price:F1</li>
+                    <li>Condition: @review.Condition:F1</li>
+                    <li>Atmosphere: @review.Atmosphere:F1</li>
+                </ul>
+                <p>@review.Comment</p>
+
+                @* Admin: Edit/Delete buttons *@
+                @if (User.IsInRole("Admin"))
+                {
+                    <div>
+                        <form asp-page-handler="Delete"
+                              asp-route-id="@review.ReviewId"
+                              method="post"
+                              class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (!Model.Restaurant.Reviews.Any())
+        {
+            <p class="text-muted">No reviews yet.</p>
+        }
+    </section>
+
+</div>

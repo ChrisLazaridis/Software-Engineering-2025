@@ -1,22 +1,69 @@
+/* site.css */
+
+/* Base font sizing and layout */
 html {
-  font-size: 14px;
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+    html {
+        font-size: 16px;
+    }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+/* Light theme variables */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #000000;
+    --card-bg: #ffffff;
+    --card-text: #000000;
+    --card-border: rgba(0,0,0,0.125);
+    --btn-focus-shadow-outer: 0 0 0 0.1rem white;
+    --btn-focus-shadow-inner: 0 0 0 0.25rem #258cfb;
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+/* Dark theme overrides */
+.dark {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --card-bg: #1e1e1e;
+    --card-text: #e0e0e0;
+    --card-border: rgba(255,255,255,0.1);
+    --btn-focus-shadow-outer: 0 0 0 0.1rem #1f1f1f;
+    --btn-focus-shadow-inner: 0 0 0 0.25rem #258cfb;
 }
 
+/* Global body styles */
 body {
-  margin-bottom: 60px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin-bottom: 60px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Card theming */
+.card {
+    background-color: var(--card-bg);
+    color: var(--card-text);
+    border: 1px solid var(--card-border);
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+/* Ensure card header & footer inherit */
+.card-header,
+.card-footer {
+    background-color: var(--card-bg);
+    color: var(--card-text);
+    border-bottom: 1px solid var(--card-border);
+}
+
+/* Button & form focus states */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: var(--btn-focus-shadow-outer), var(--btn-focus-shadow-inner);
 }
