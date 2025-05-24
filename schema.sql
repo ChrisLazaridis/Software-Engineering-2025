@@ -1,5 +1,6 @@
 -- 1) Enable PostGIS
 CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- 2) Identity tables
 CREATE TABLE "AspNetRoles" (
@@ -182,3 +183,36 @@ CREATE TRIGGER trg_update_restaurant_avg
   AFTER INSERT ON "Review"
   FOR EACH ROW
   EXECUTE FUNCTION update_restaurant_average();
+
+
+-- Foreign-key relationship indexes
+CREATE INDEX idx_review_restaurantid     ON "Review"       ("RestaurantId");
+CREATE INDEX idx_review_criticid         ON "Review"       ("CriticId");
+CREATE INDEX idx_restaurantimage_restid  ON "RestaurantImage" ("RestaurantId");
+CREATE INDEX idx_restaurant_entrepreneur ON "Restaurant"   ("EntrepreneurId");
+
+-- ASP .NET Identity indexes
+CREATE INDEX idx_aspnetusers_normemail       ON "AspNetUsers"      ("NormalizedEmail");
+CREATE INDEX idx_aspnetusers_normusername    ON "AspNetUsers"      ("NormalizedUserName");
+CREATE INDEX idx_aspnetuserclaims_userid     ON "AspNetUserClaims" ("UserId");
+CREATE INDEX idx_aspnetuserlogins_userid     ON "AspNetUserLogins" ("UserId");
+CREATE INDEX idx_aspnetusertokens_userid     ON "AspNetUserTokens" ("UserId");
+CREATE INDEX idx_aspnetuserroles_userid      ON "AspNetUserRoles"  ("UserId");
+CREATE INDEX idx_aspnetuserroles_roleid      ON "AspNetUserRoles"  ("RoleId");
+CREATE INDEX idx_aspnetroleclaims_roleid     ON "AspNetRoleClaims" ("RoleId");
+CREATE INDEX idx_aspnetroles_normname        ON "AspNetRoles"      ("NormalizedName");
+
+-- Spatial index on restaurant location
+CREATE INDEX idx_restaurant_location ON "Restaurant"
+  USING GIST("Location");
+
+-- Text-search (trigram) index on restaurant name
+CREATE INDEX idx_restaurant_name_trgm ON "Restaurant"
+  USING GIN("Name" gin_trgm_ops);
+
+-- Filtering/sorting indexes
+CREATE INDEX idx_restaurant_type ON "Restaurant"("RestaurantType");
+
+-- BRIN index on review timestamps for efficient range scans
+CREATE INDEX idx_review_createdat_brin ON "Review"
+  USING BRIN("CreatedAt");
