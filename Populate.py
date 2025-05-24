@@ -8,10 +8,7 @@ import datetime
 from dotenv import load_dotenv
 import time
 import logging
-import base64
-import hashlib
-import struct
-import secrets
+import subprocess
 import uuid
 
 # ─── Logging ────────────────────────────────────────────────────────────────
@@ -47,38 +44,26 @@ def create_db_connection():
         host=DB_HOST, database=DB_NAME,
         user=DB_USER, password=DB_PASS
     )
-import base64
-import hashlib
-import secrets
-import struct
-import subprocess
-
 
 def identityv3_hash_password(password: str) -> str:
     """
     Calls the .NET HashTool console app to get a 
     V3-format Identity password hash blob.
     """
-    # 1) Run HashTool; adjust the project path as needed
     proc = subprocess.run(
         ["dotnet", "run", "--project", r"HashTool", password],
-        capture_output=True,    # capture both stdout/stderr
-        text=True,              # decode bytes → str
-        check=True              # raise if exit code ≠ 0
-    )  
+        capture_output=True,
+        text=True,
+        check=True
+    )
 
-    # 2) Extract the line that starts with "Hash: "
     for line in proc.stdout.splitlines():
         if line.startswith("Hash:"):
-            # remove the prefix and any surrounding whitespace
             return line[len("Hash:"):].strip()
-
-    # 3) If no "Hash:" line, fall back to raw output
     return proc.stdout.strip()
 
 def gen_password(length=10):
     alphabet = string.ascii_letters + string.digits
-    # start with a random special letter
     password = random.choice(string.punctuation)
     password += ''.join(random.choice(alphabet) for _ in range(length))
     return password
@@ -267,7 +252,8 @@ def import_restaurants(conn):
 
                     for rv in details.get("reviews", []):
                         author = rv.get("author_name","Anonymous")
-                        rating = rv.get("rating",3.0)
+                        rating = rv.get("rating", 3.0)
+
                         # find or create critic
                         cur.execute('SELECT "CriticId","UserId" FROM "Critic" WHERE "Username"=%s;', (author,))
                         row = cur.fetchone()
@@ -311,13 +297,24 @@ def import_restaurants(conn):
                             critic_creds.append((un, em, pwd))
                             conn.commit()
 
-                        # Review insert
-                        avg = rating
+                        # Insert review: mirror rating into each category + Average
                         cur.execute(
                             '''INSERT INTO "Review"
-                               ("RestaurantId","CriticId","Food","Service","Price","Condition","Atmosphere","Average","Comment")
+                               ("RestaurantId","CriticId",
+                                "Food","Service","Price","Condition","Atmosphere",
+                                "Average","Comment")
                                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s);''',
-                            (rid, cid, avg, avg, avg, avg, avg, avg, rv.get("text",""))
+                            (
+                                rid,
+                                cid,
+                                rating,  # Food
+                                rating,  # Service
+                                rating,  # Price
+                                rating,  # Condition
+                                rating,  # Atmosphere
+                                rating,  # Average
+                                rv.get("text","")
+                            )
                         )
                         conn.commit()
 
