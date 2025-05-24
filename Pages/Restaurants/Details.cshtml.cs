@@ -1,5 +1,4 @@
-// Pages/Restaurants/Details.cshtml.cs
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SoftEng2025.Data;
 using SoftEng2025.Models;
+using SoftEng2025.Services;    // <-- geocoding service namespace
 
 namespace SoftEng2025.Pages.Restaurants
 {
@@ -15,17 +15,23 @@ namespace SoftEng2025.Pages.Restaurants
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IGeocodingService _geocoder;
 
-        public DetailsModel(ApplicationDbContext db,
-                            UserManager<IdentityUser> userManager)
+        public DetailsModel(
+            ApplicationDbContext db,
+            UserManager<IdentityUser> userManager,
+            IGeocodingService geocoder)
         {
             _db = db;
             _userManager = userManager;
+            _geocoder = geocoder;
         }
 
         public Restaurant Restaurant { get; set; }
 
-        // New properties to control the Add Review UI
+        // new: human‐readable address
+        public string Address { get; set; }
+
         public bool CanAddReview { get; set; }
         public int? MyReviewId { get; set; }
 
@@ -42,7 +48,12 @@ namespace SoftEng2025.Pages.Restaurants
             if (Restaurant == null)
                 return NotFound();
 
-            // If the current user is in the Critic role, check if they've already reviewed
+            // reverse‐geocode
+            Address = await _geocoder.GetAddressAsync(
+                Restaurant.Location.Y,
+                Restaurant.Location.X
+            );
+
             if (User.IsInRole("Critic"))
             {
                 var userId = _userManager.GetUserId(User);
@@ -62,7 +73,6 @@ namespace SoftEng2025.Pages.Restaurants
             return Page();
         }
 
-        // Only Admins can delete any review
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {

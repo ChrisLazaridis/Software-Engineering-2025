@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SoftEng2025.Data;
 using Microsoft.Extensions.DependencyInjection;
+using SoftEng2025.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,10 @@ builder.Services.Configure<PasswordHasherOptions>(opts =>
 
 // 4) Razor Pages, middleware, role‐seeding, etc.
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache(); // ← for caching geocoding results
+builder.Services
+    .AddHttpClient<IGeocodingService, GeocodingService>()
+    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 builder.Services.AddRazorPages();
 
 var app = builder.Build();

@@ -71,11 +71,10 @@
                         </dd>
                     }
 
-                    <dt class="col-6">Location (lng, lat)</dt>
-                    <dd class="col-6">
-                        @($"{Model.Restaurant.Location.X:F4}, {Model.Restaurant.Location.Y:F4}")
-                    </dd>
+                    <dt class="col-6">Location</dt>
+                    <dd class="col-6">@Model.Address</dd>
                 </dl>
+
             </div>
         </div>
     </aside>
