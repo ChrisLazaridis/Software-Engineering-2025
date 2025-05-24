@@ -1,72 +1,140 @@
 ﻿@page "{id:int}"
 @model SoftEng2025.Pages.Restaurants.DetailsModel
-@using Microsoft.AspNetCore.Authorization
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
-<div class="d-flex" style="gap:1rem;">
+<div class="row">
+    <!-- LEFT SIDEBAR -->
+    <aside class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                @{
+                    var image = Model.Restaurant.Images.FirstOrDefault();
+                    string imgSrc = null;
+                    if (image != null)
+                    {
+                        var base64 = Convert.ToBase64String(image.ImageData);
+                        imgSrc = $"data:image/jpeg;base64,{base64}";
+                    }
+                }
 
-    <!-- Left sidebar -->
-    <aside class="flex-shrink-0" style="width: 300px; padding:1rem; border-right:1px solid #ccc;">
-        <h2>@Model.Restaurant.Name</h2>
-        <p><strong>Owner:</strong> @Model.Restaurant.Entrepreneur.FirstName @Model.Restaurant.Entrepreneur.LastName</p>
-        <p><strong>Type:</strong> @Model.Restaurant.RestaurantType</p>
-        <p><strong>Seats:</strong> @Model.Restaurant.Seats</p>
-        <p><strong>Avg. Rating:</strong> @Model.Restaurant.AverageRating:F1 (@Model.Restaurant.ReviewCount reviews)</p>
-        @if (!string.IsNullOrEmpty(Model.Restaurant.Website))
-        {
-            <p><a href="@Model.Restaurant.Website" target="_blank">Visit Website</a></p>
-        }
-    </aside>
-
-    <!-- Right reviews panel -->
-    <section class="flex-fill" style="max-height: 80vh; overflow-y: auto; padding:1rem;">
-        <h3>Reviews</h3>
-
-        @* Critic: Add Review button placeholder *@
-        @if (User.IsInRole("Critic"))
-        {
-            <button class="btn btn-primary mb-3" disabled>
-                + Add Review
-            </button>
-        }
-
-        @* Loop through reviews *@
-        @foreach (var review in Model.Restaurant.Reviews.OrderByDescending(r => r.CreatedAt))
-        {
-            <div class="mb-4 p-3 border rounded">
-                <p>
-                    <strong>@review.Critic.FirstName @review.Critic.LastName</strong>
-                    <span class="text-muted">(@review.CreatedAt:g)</span>
-                </p>
-                <ul>
-                    <li>Food: @review.Food:F1</li>
-                    <li>Service: @review.Service:F1</li>
-                    <li>Price: @review.Price:F1</li>
-                    <li>Condition: @review.Condition:F1</li>
-                    <li>Atmosphere: @review.Atmosphere:F1</li>
-                </ul>
-                <p>@review.Comment</p>
-
-                @* Admin: Edit/Delete buttons *@
-                @if (User.IsInRole("Admin"))
+                @if (imgSrc != null)
                 {
-                    <div>
-                        <form asp-page-handler="Delete"
-                              asp-route-id="@review.ReviewId"
-                              method="post"
-                              class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-danger">
-                                Delete
-                            </button>
-                        </form>
+                    <img src="@imgSrc"
+                         class="img-fluid rounded mb-3"
+                         alt="@Model.Restaurant.Name" />
+                }
+                else
+                {
+                    <div class="bg-secondary text-white rounded mb-3 p-5">
+                        No image available
                     </div>
                 }
+
+                <h4 class="card-title">@Model.Restaurant.Name</h4>
+                <h6 class="card-subtitle mb-3 text-muted">
+                    @Model.Restaurant.RestaurantType
+                </h6>
+
+                <dl class="row text-left">
+                    <dt class="col-6">Average Rating</dt>
+                    <dd class="col-6">
+                        @{
+                            var floored = Math.Floor(Model.Restaurant.AverageRating * 100) / 100;
+                        }
+                        @floored.ToString("F2")
+                    </dd>
+
+                    <dt class="col-6">Reviews</dt>
+                    <dd class="col-6">@Model.Restaurant.ReviewCount</dd>
+
+                    <dt class="col-6">Seats</dt>
+                    <dd class="col-6">@Model.Restaurant.Seats</dd>
+
+                    <dt class="col-6">Opened</dt>
+                    <dd class="col-6">
+                        @Model.Restaurant.CreatedAt.ToLocalTime().ToString("d")
+                    </dd>
+
+                    <dt class="col-6">Owner</dt>
+                    <dd class="col-6">
+                        @Model.Restaurant.Entrepreneur.FirstName
+                        @Model.Restaurant.Entrepreneur.LastName
+                    </dd>
+
+                    @if (!string.IsNullOrEmpty(Model.Restaurant.Website))
+                    {
+                        <dt class="col-6">Website</dt>
+                        <dd class="col-6">
+                            <a href="@Model.Restaurant.Website" target="_blank">
+                                @Model.Restaurant.Website
+                            </a>
+                        </dd>
+                    }
+
+                    <dt class="col-6">Location (lng, lat)</dt>
+                    <dd class="col-6">
+                        @($"{Model.Restaurant.Location.X:F4}, {Model.Restaurant.Location.Y:F4}")
+                    </dd>
+                </dl>
             </div>
-        }
+        </div>
+    </aside>
 
-        @if (!Model.Restaurant.Reviews.Any())
-        {
-            <p class="text-muted">No reviews yet.</p>
-        }
+    <!-- MAIN CONTENT -->
+    <section class="col-md-8">
+        <p class="mb-3">
+            @if (Model.CanAddReview)
+            {
+                <a asp-page="AddReview"
+                   asp-route-restaurantId="@Model.Restaurant.RestaurantId"
+                   class="btn btn-primary">
+                    Add Review
+                </a>
+            }
+        </p>
+
+        <div class="reviews">
+            @foreach (var rv in Model.Restaurant.Reviews)
+            {
+                var highlight = rv.ReviewId == Model.MyReviewId
+                ? "border-primary bg-light"
+                : "border-secondary";
+                <div class="card mb-3 shadow-sm border @highlight">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <h5 class="card-title mb-1">@rv.Critic.Username</h5>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <form method="post"
+                                      asp-page-handler="Delete"
+                                      asp-route-id="@rv.ReviewId"
+                                      onsubmit="return confirm('Delete this review?');">
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger">
+                                        ×
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                Food: @rv.Food | Service: @rv.Service |
+                                Price: @rv.Price | Condition: @rv.Condition |
+                                Atmosphere: @rv.Atmosphere
+                            </small>
+                        </p>
+                        <p class="card-text">
+                            <strong>Avg:</strong> @rv.Average
+                        </p>
+                        <blockquote class="blockquote mb-0">
+                            <p>@rv.Comment</p>
+                            <footer class="blockquote-footer">
+                                @rv.CreatedAt.ToLocalTime().ToString("g")
+                            </footer>
+                        </blockquote>
+                    </div>
+                </div>
+            }
+        </div>
     </section>
-
 </div>

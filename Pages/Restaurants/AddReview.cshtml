@@ -1,0 +1,193 @@
+﻿@page "{restaurantId:int}"
+@model SoftEng2025.Pages.Restaurants.AddReviewModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<h2 class="text-center mb-4">Add Review for @Model.Restaurant.Name</h2>
+
+<form method="post" id="reviewForm">
+    <input asp-for="RestaurantId" type="hidden" />
+    <input asp-for="CriticId" type="hidden" />
+
+    <div class="overflow-hidden">
+        <div class="steps-container d-flex">
+            <!-- STEP 1: Sliders -->
+            <div class="step d-flex flex-column justify-content-center align-items-center">
+                <h4 class="mb-3">Step 1: Rate each category</h4>
+
+                <div class="w-75 mb-2">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Food:</span> <span id="FoodVal">3.0</span>
+                    </label>
+                    <input asp-for="Food" id="Food" type="range"
+                           min="1" max="5" step="0.2" value="3.0"
+                           class="form-range form-range-lg w-100" />
+                </div>
+
+                <div class="w-75 mb-2">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Service:</span> <span id="ServiceVal">3.0</span>
+                    </label>
+                    <input asp-for="Service" id="Service" type="range"
+                           min="1" max="5" step="0.2" value="3.0"
+                           class="form-range form-range-lg w-100" />
+                </div>
+
+                <div class="w-75 mb-2">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Price:</span> <span id="PriceVal">3.0</span>
+                    </label>
+                    <input asp-for="Price" id="Price" type="range"
+                           min="1" max="5" step="0.2" value="3.0"
+                           class="form-range form-range-lg w-100" />
+                </div>
+
+                <div class="w-75 mb-2">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Condition:</span> <span id="ConditionVal">3.0</span>
+                    </label>
+                    <input asp-for="Condition" id="Condition" type="range"
+                           min="1" max="5" step="0.2" value="3.0"
+                           class="form-range form-range-lg w-100" />
+                </div>
+
+                <div class="w-75 mb-3">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Atmosphere:</span> <span id="AtmosphereVal">3.0</span>
+                    </label>
+                    <input asp-for="Atmosphere" id="Atmosphere" type="range"
+                           min="1" max="5" step="0.2" value="3.0"
+                           class="form-range form-range-lg w-100" />
+                </div>
+
+                <div class="mb-3">
+                    <strong>Live average:</strong>
+                    <span id="liveAverage" class="fs-4">—</span>
+                </div>
+
+                <button type="button" id="nextBtn" class="btn btn-primary btn-lg">
+                    Next
+                </button>
+            </div>
+
+            <!-- STEP 2: Show average & comment -->
+            <div class="step d-flex flex-column justify-content-center align-items-center">
+                <h4 class="mb-3">Step 2: Confirm & Comment</h4>
+
+                <p class="fs-5 mb-3">
+                    Your weighted average:
+                    <strong><span id="averageDisplay">—</span></strong>
+                </p>
+                <input asp-for="Average" type="hidden" id="Average" />
+
+                <div class="w-75 mb-3">
+                    <label asp-for="Comment" class="form-label"></label>
+                    <textarea asp-for="Comment" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Comment" class="text-danger"></span>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" id="backBtn" class="btn btn-secondary btn-lg">
+                        Back
+                    </button>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        Submit Review
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Styles {
+    <style>
+        .overflow-hidden {
+            overflow: hidden;
+        }
+
+        .steps-container {
+            width: 200%;
+            transition: transform .5s ease;
+        }
+
+        .step {
+            width: 50%;
+            padding: 2rem 1rem;
+            box-sizing: border-box;
+        }
+
+        /* Increase the size of the range thumb (for browsers that support it) */
+        input[type=range].form-range-lg::-webkit-slider-thumb {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        (function(){
+          const model = {
+            wF: @Model.WeightFood,
+            wS: @Model.WeightService,
+            wP: @Model.WeightPrice,
+            wC: @Model.WeightCondition,
+            wA: @Model.WeightAtmosphere,
+            sum: @(
+              Model.WeightFood
+          + Model.WeightService
+          + Model.WeightPrice
+          + Model.WeightCondition
+          + Model.WeightAtmosphere
+                )
+      };
+
+      const steps = document.querySelector('.steps-container');
+      const liveAvgEl = document.getElementById('liveAverage');
+      const disp1 = document.getElementById('averageDisplay');
+      const hiddenAvg = document.getElementById('Average');
+      const sliders = ['Food','Service','Price','Condition','Atmosphere'];
+
+      function updateDisplays() {
+        // update each slider label
+        sliders.forEach(cat => {
+          const val = parseFloat(document.getElementById(cat).value);
+          document.getElementById(cat + 'Val').textContent = val.toFixed(1);
+        });
+
+        // compute weighted average
+        const vals = sliders.map(cat => +document.getElementById(cat).value);
+        const sum = Math.pow(vals[0], model.wF)
+                  * Math.pow(vals[1], model.wS)
+                  * Math.pow(vals[2], model.wP)
+                  * Math.pow(vals[3], model.wC)
+                  * Math.pow(vals[4], model.wA);
+        const avg = Math.pow(sum, 1 / model.sum);
+
+        // live display
+        liveAvgEl.textContent = avg.toFixed(2);
+        // step2 display & hidden field
+        disp1.textContent  = avg.toFixed(2);
+        hiddenAvg.value    = avg.toFixed(2);
+      }
+
+      // bind all sliders
+      sliders.forEach(cat => {
+        document.getElementById(cat)
+                .addEventListener('input', updateDisplays);
+      });
+
+      // Next / Back buttons
+      document.getElementById('nextBtn')
+              .addEventListener('click', () => {
+        steps.style.transform = 'translateX(-50%)';
+      });
+      document.getElementById('backBtn')
+              .addEventListener('click', () => {
+        steps.style.transform = 'translateX(0)';
+      });
+
+      // initialize on load
+      updateDisplays();
+    })();
+</script>
+}
