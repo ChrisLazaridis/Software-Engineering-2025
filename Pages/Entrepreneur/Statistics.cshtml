@@ -1,0 +1,19 @@
+﻿@page "{id:int}"
+@model SoftEng2025.Pages.Entrepreneur.StatisticsModel
+@{
+    ViewData["Title"] = "Restaurant Statistics";
+}
+
+<h1>@Model.RestaurantName – Last 30 Days</h1>
+
+<div class="mb-5">
+    <h3>Daily Review Count</h3>
+    <img src="?handler=ReviewCountChart&id=@Model.RestaurantId" 
+         alt="Review Count Chart" class="img-fluid" />
+</div>
+
+<div class="mb-5">
+    <h3>Daily Average Rating</h3>
+    <img src="?handler=RatingTrendChart&id=@Model.RestaurantId" 
+         alt="Rating Trend Chart" class="img-fluid" />
+</div>

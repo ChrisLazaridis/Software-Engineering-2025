@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.AspNetCore.Identity;
 
 namespace SoftEng2025.Models
 {
@@ -16,6 +17,7 @@ namespace SoftEng2025.Models
         public string UserId { get; set; }
 
         [ForeignKey(nameof(UserId))]
+        [ValidateNever]
         public IdentityUser User { get; set; }
 
         [Required, MaxLength(255)]

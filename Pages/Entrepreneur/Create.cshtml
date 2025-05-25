@@ -1,0 +1,116 @@
+﻿@page
+@model SoftEng2025.Pages.Entrepreneur.CreateModel
+@addTagHelper *, SoftEng2025
+
+<h2 class="text-center mb-4">Add New Restaurant</h2>
+
+<form method="post" enctype="multipart/form-data" id="createForm">
+    <!-- validation summary -->
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+    <div class="overflow-hidden">
+        <div class="steps-container d-flex">
+
+            <!-- STEP 1: Map picker -->
+            <div class="step d-flex flex-column align-items-center">
+                <h4 class="mb-3">Step 1: Choose Location</h4>
+                <map lat="37.9838" lon="23.7275" selectable="true" width="100%" height="400px"></map>
+                <button type="button" id="next1" class="btn btn-primary mt-4">Next</button>
+            </div>
+
+            <!-- STEP 2: Details form -->
+            <div class="step d-flex flex-column">
+                <h4 class="mb-3">Step 2: Restaurant Details</h4>
+
+                <div class="mb-3">
+                    <label asp-for="Restaurant.Name" class="form-label"></label>
+                    <input asp-for="Restaurant.Name" class="form-control" />
+                    <span asp-validation-for="Restaurant.Name" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Restaurant.Website" class="form-label"></label>
+                    <input asp-for="Restaurant.Website" class="form-control" />
+                    <span asp-validation-for="Restaurant.Website" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Restaurant.Seats" class="form-label"></label>
+                    <input asp-for="Restaurant.Seats" type="number" min="1" class="form-control" />
+                    <span asp-validation-for="Restaurant.Seats" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Restaurant.RestaurantType" class="form-label"></label>
+                    <select asp-for="Restaurant.RestaurantType" class="form-select">
+                        <option value="">-- select type --</option>
+                        <option>Café</option>
+                        <option>Chinese</option>
+                        <option>Fast Food</option>
+                        <option>Fine Dining</option>
+                        <option>Greek</option>
+                        <option>Italian</option>
+                        <option>Seafood</option>
+                        <option>Ethnic</option>
+                        <option>Taverna</option>
+                        <option>Roof Garden</option>
+                    </select>
+                    <span asp-validation-for="Restaurant.RestaurantType" class="text-danger"></span>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" id="back2" class="btn btn-secondary">Back</button>
+                    <button type="button" id="next2" class="btn btn-primary">Next</button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Optional image -->
+            <div class="step d-flex flex-column align-items-center">
+                <h4 class="mb-3">Step 3: Add an Image (optional)</h4>
+
+                <div class="mb-3 w-75">
+                    <input asp-for="ImageFile" type="file" class="form-control" />
+                    <span asp-validation-for="ImageFile" class="text-danger"></span>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" id="back3" class="btn btn-secondary">Back</button>
+                    <button type="submit" class="btn btn-success">Create Restaurant</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</form>
+
+@section Styles {
+    <style>
+        .overflow-hidden {
+            overflow: hidden;
+        }
+
+        .steps-container {
+            width: 300%;
+            display: flex;
+            transition: transform .5s ease;
+        }
+
+        .step {
+            width: 33.3333%;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        (function() {
+            const steps = document.querySelector('.steps-container');
+            document.getElementById('next1').onclick = () => steps.style.transform = 'translateX(-33.3333%)';
+            document.getElementById('back2').onclick = () => steps.style.transform = 'translateX(0)';
+            document.getElementById('next2').onclick = () => steps.style.transform = 'translateX(-66.6666%)';
+            document.getElementById('back3').onclick = () => steps.style.transform = 'translateX(-33.3333%)';
+        })();
+    </script>
+}

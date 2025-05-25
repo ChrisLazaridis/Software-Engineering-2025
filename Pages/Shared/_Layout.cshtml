@@ -1,27 +1,30 @@
-﻿<!DOCTYPE html>
+﻿@using System.Security.Claims
+@inject SoftEng2025.Data.ApplicationDbContext _db
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - SoftEng2025</title>
-
-    <!-- Bootstrap CSS -->
+    <!-- 1. Bootstrap core CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
-    <!-- Your site CSS (with theme variables) -->
+    <!-- 2. Material Design theme -->
+    <link rel="stylesheet"
+          href="~/bootstrap-material-design/dist/css/bootstrap-material-design.min.css" />
+
+    <!-- 3. Your overrides & theme variables -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/SoftEng2025.styles.css" asp-append-version="true" />
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
-        crossorigin="" />
-    <script
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
-        crossorigin="">
-</script>
+
+    <!-- 4. Leaflet CSS -->
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          crossorigin="" />
+
     @RenderSection("Styles", required: false)
+
+    <!-- 5. Leaflet JS (in head so inline <map> scripts see `L`) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            crossorigin=""></script>
 </head>
 <body>
     <header>
@@ -35,15 +38,26 @@
 
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
+                        @{
+                            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                            var isEnt = !string.IsNullOrEmpty(userId)
+                            && _db.Entrepreneurs.Any(e => e.UserId == userId);
+                        }
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                            @if (isEnt)
+                            {
+                                <a class="nav-link text-dark" asp-page="/Entrepreneur/Index">My Dashboard</a>
+                            }
+                            else
+                            {
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                            }
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
                     </ul>
 
-                    <!-- Dark mode toggle -->
                     <button id="theme-toggle"
                             class="btn btn-outline-secondary"
                             title="Toggle light/dark mode"
@@ -69,14 +83,22 @@
         </div>
     </footer>
 
-    <!-- JS dependencies -->
+    <!-- 1. jQuery -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 2. Popper.js (required for Bootstrap dropdowns) -->
+    <script src="~/lib/popper.js/dist/umd/popper.min.js"></script>
+    <!-- 3. Bootstrap JS (without bundle) -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+    <!-- 4. Material Design plugin -->
+    <script src="~/bootstrap-material-design/dist/js/bootstrap-material-design.min.js"></script>
+    <script>
+        $(function() {
+          $('body').bootstrapMaterialDesign();
+        });
+    </script>
 
-    <!-- Your site scripts -->
+    <!-- 5. Your site scripts & theme toggler -->
     <script src="~/js/site.js" asp-append-version="true"></script>
-
-    <!-- Dark-mode toggle script -->
     <script src="~/js/theme.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)

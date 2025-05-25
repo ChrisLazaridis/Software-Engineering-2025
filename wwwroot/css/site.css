@@ -1,6 +1,6 @@
-/* site.css */
-
-/* Base font sizing and layout */
+/* ------------------------------------------------------------
+   Base font sizing and layout
+   ------------------------------------------------------------ */
 html {
     font-size: 14px;
     position: relative;
@@ -13,7 +13,9 @@ html {
     }
 }
 
-/* Light theme variables */
+/* ------------------------------------------------------------
+   Light & Dark CSS variables
+   ------------------------------------------------------------ */
 :root {
     --bg-color: #ffffff;
     --text-color: #000000;
@@ -22,9 +24,12 @@ html {
     --card-border: rgba(0,0,0,0.125);
     --btn-focus-shadow-outer: 0 0 0 0.1rem white;
     --btn-focus-shadow-inner: 0 0 0 0.25rem #258cfb;
+    --input-bg: #fff;
+    --input-text: #212529;
+    --dropdown-bg: #fff;
+    --dropdown-text: #212529;
 }
 
-/* Dark theme overrides */
 .dark {
     --bg-color: #121212;
     --text-color: #e0e0e0;
@@ -33,37 +38,136 @@ html {
     --card-border: rgba(255,255,255,0.1);
     --btn-focus-shadow-outer: 0 0 0 0.1rem #1f1f1f;
     --btn-focus-shadow-inner: 0 0 0 0.25rem #258cfb;
+    --input-bg: #2b2b2b;
+    --input-text: #e0e0e0;
+    --dropdown-bg: #2b2b2b;
+    --dropdown-text: #e0e0e0;
 }
 
-/* Global body styles */
+/* ------------------------------------------------------------
+   Global body, text and links
+   ------------------------------------------------------------ */
 body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
     margin-bottom: 60px;
     transition: background-color 0.3s, color 0.3s;
 }
 
-/* Card theming */
+a {
+    color: var(--btn-focus-shadow-inner);
+}
+
+    a:hover {
+        color: lighten(var(--btn-focus-shadow-inner), 10%);
+    }
+
+/* ------------------------------------------------------------
+   Override Material & Bootstrap components in dark mode
+   ------------------------------------------------------------ */
+/* Navbar */
+.navbar {
+    background-color: var(--card-bg) !important;
+}
+
+.dark .navbar {
+    background-color: var(--card-bg) !important;
+}
+
+/* Cards */
 .card {
-    background-color: var(--card-bg);
-    color: var(--card-text);
-    border: 1px solid var(--card-border);
+    background-color: var(--card-bg) !important;
+    color: var(--card-text) !important;
+    border: 1px solid var(--card-border) !important;
     transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 
-/* Ensure card header & footer inherit */
-.card-header,
-.card-footer {
-    background-color: var(--card-bg);
-    color: var(--card-text);
-    border-bottom: 1px solid var(--card-border);
+.card-header, .card-footer {
+    background-color: var(--card-bg) !important;
+    color: var(--card-text) !important;
+    border-color: var(--card-border) !important;
 }
 
-/* Button & form focus states */
-.btn:focus,
-.btn:active:focus,
-.btn-link.nav-link:focus,
-.form-control:focus,
-.form-check-input:focus {
-    box-shadow: var(--btn-focus-shadow-outer), var(--btn-focus-shadow-inner);
+/* Buttons */
+.btn, .dropdown-menu .dropdown-item {
+    color: var(--text-color) !important;
+    background-color: var(--card-bg) !important;
 }
+
+.btn-primary {
+    background-color: var(--btn-focus-shadow-inner) !important;
+    border-color: var(--btn-focus-shadow-inner) !important;
+}
+
+    .btn-primary:hover {
+        background-color: darken(var(--btn-focus-shadow-inner), 5%) !important;
+        border-color: darken(var(--btn-focus-shadow-inner), 5%) !important;
+    }
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus {
+    box-shadow: var(--btn-focus-shadow-outer), var(--btn-focus-shadow-inner) !important;
+}
+
+/* Form controls */
+.form-control {
+    background-color: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    border-color: var(--card-border) !important;
+}
+
+    .form-control:focus {
+        background-color: var(--input-bg) !important;
+        color: var(--input-text) !important;
+        box-shadow: var(--btn-focus-shadow-outer), var(--btn-focus-shadow-inner) !important;
+    }
+
+/* Dropdowns */
+.dropdown-menu {
+    background-color: var(--dropdown-bg) !important;
+    color: var(--dropdown-text) !important;
+    border-color: var(--card-border) !important;
+}
+
+.dropdown-item {
+    color: var(--dropdown-text) !important;
+}
+
+    .dropdown-item:hover, .dropdown-item:focus {
+        background-color: var(--card-border) !important;
+    }
+
+/* Input group addons, selects */
+.input-group-text, .form-select {
+    background-color: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    border-color: var(--card-border) !important;
+}
+
+/* Transition reset on theme toggle */
+.dark *, .dark {
+    transition: none !important;
+}
+
+body {
+    transition: background-color 0.3s, color 0.3s !important;
+}
+/* Navbar links & brand in dark mode */
+.dark .navbar,
+.dark .navbar .navbar-brand,
+.dark .navbar .nav-link {
+    background-color: var(--card-bg) !important;
+    color: #ffffff !important;
+}
+
+/* If you have dropdowns in the navbar */
+.dark .navbar .dropdown-menu {
+    background-color: var(--card-bg) !important;
+}
+
+.dark .navbar .dropdown-item {
+    color: #ffffff !important;
+}
+
+    .dark .navbar .dropdown-item:hover {
+        background-color: var(--card-border) !important;
+    }

@@ -1,0 +1,31 @@
+﻿@page
+@model SoftEng2025.Pages.Entrepreneur.IndexModel
+@using SoftEng2025.Pages.Entrepreneur
+@{
+    ViewData["Title"] = "My Restaurants";
+}
+
+<h1>Welcome, @Model.Username!</h1>
+
+<div class="row">
+    @foreach(var card in Model.Cards) {
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 box-shadow">
+                <img src="@card.ImageBase64" class="card-img-top" alt="@card.Name" />
+                <div class="card-body">
+                    <h5 class="card-title">@card.Name</h5>
+                    <p class="card-text">
+                        Rating: @card.AverageRating (based on @card.ReviewCount reviews)
+                    </p>
+                    <a asp-page="./Statistics" asp-route-id="@card.Id" class="btn btn-outline-primary">
+                        View Statistics
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<a asp-page="./Create" class="btn btn-primary mt-4">
+    + Add New Restaurant
+</a>

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SoftEng2025.Data;
@@ -41,8 +43,16 @@ namespace SoftEng2025.Pages
         public int TotalPages { get; set; }
         public List<string> AllTypes { get; set; }
 
-        public async Task OnGetAsync(string search, string filterType, int currentPage = 1)
+        public async Task<IActionResult> OnGetAsync(string search, string filterType, int currentPage = 1)
         {
+            // 0) if Entrepreneur, redirect to their dashboard
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userId) &&
+                await _db.Entrepreneurs.AnyAsync(e => e.UserId == userId))
+            {
+                return RedirectToPage("/Entrepreneur/Index");
+            }
+
             // 1) assign incoming parameters
             Search = search;
             FilterType = filterType;
@@ -112,6 +122,9 @@ namespace SoftEng2025.Pages
                     };
                 })
                 .ToList();
+
+            // finally render the page
+            return Page();
         }
     }
 }

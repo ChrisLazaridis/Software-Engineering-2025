@@ -6,40 +6,62 @@ namespace SoftEng2025.TagHelpers
     [HtmlTargetElement("map", Attributes = "lat,lon")]
     public class MapTagHelper : TagHelper
     {
-        /// <summary>Latitude to center on.</summary>
         public double Lat { get; set; }
-
-        /// <summary>Longitude to center on.</summary>
         public double Lon { get; set; }
-
-        /// <summary>CSS width (e.g. "250px" or "100%").</summary>
         public string Width { get; set; } = "250px";
-
-        /// <summary>CSS height (e.g. "150px").</summary>
         public string Height { get; set; } = "150px";
+        public bool Selectable { get; set; } = false;
 
         public override void Process(TagHelperContext context, TagHelperOutput output)
         {
-            // Generate a unique div ID so multiple maps can coexist
+            // 1) Container DIV
             var id = $"map_{Guid.NewGuid():N}";
-
-            // Turn <map> into a <div id="..." style="..."></div>
             output.TagName = "div";
             output.Attributes.SetAttribute("id", id);
             output.Attributes.SetAttribute("style", $"width:{Width};height:{Height};");
 
-            // Append the inline Leaflet init script _after_ the div
+            // 2) Hidden inputs if selectable
+            if (Selectable)
+            {
+                var hidden = @"
+<input type=""hidden"" id=""Lat"" name=""Lat"" />
+<input type=""hidden"" id=""Lon"" name=""Lon"" />";
+                output.PreElement.AppendHtml(hidden);
+            }
+
+            // 3) Initialize map + marker
+            //    Fix: marker options object passed _into_ L.marker(...)
             var script = $@"
 <script>
-  // initialize the map
-  var map = L.map('{id}').setView([{Lat}, {Lon}], 15);
-  // use OpenStreetMap tiles
-  L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }}).addTo(map);
-  // marker at the exact spot
-  L.marker([{Lat}, {Lon}]).addTo(map);
+  (function() {{
+    var map = L.map('{id}').setView([{Lat}, {Lon}], 15);
+    L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }}).addTo(map);
+
+    // Correct instantiation:
+    var marker = L.marker(
+      [{Lat}, {Lon}],
+      {{ draggable: {(Selectable ? "true" : "false")} }}
+    ).addTo(map);
+
+    {(Selectable
+        ? @"
+    function updateFields(latlng) {
+      document.getElementById('Lat').value = latlng.lat.toFixed(6);
+      document.getElementById('Lon').value = latlng.lng.toFixed(6);
+    }
+    updateFields(marker.getLatLng());
+    map.on('click', function(e) {
+      marker.setLatLng(e.latlng);
+      updateFields(e.latlng);
+    });
+    marker.on('dragend', function(e) {
+      updateFields(e.target.getLatLng());
+    });"
+        : "")}
+  }})();
 </script>";
             output.PostElement.AppendHtml(script);
         }
