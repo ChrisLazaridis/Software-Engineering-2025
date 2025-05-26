@@ -41,16 +41,24 @@
                         @{
                             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                             var isEnt = !string.IsNullOrEmpty(userId)
-                            && _db.Entrepreneurs.Any(e => e.UserId == userId);
+                                        && _db.Entrepreneurs.Any(e => e.UserId == userId);
+                            var isAdmin = !string.IsNullOrEmpty(userId) &&
+                                          _db.Admins.Any(a => a.UserId == userId);
                         }
                         <li class="nav-item">
-                            @if (isEnt)
+                            @if (isAdmin)
+                            {
+                                <a class="nav-link text-dark" asp-page="/Admin/Index">Admin</a>
+                                <a class="nav-link text-dark" asp-page="/Admin/Reviews">Reviews</a>
+                                <a class="nav-link text-dark" asp-page="/Admin/Users">Users</a>
+                            }
+                            else if (isEnt)
                             {
                                 <a class="nav-link text-dark" asp-page="/Entrepreneur/Index">My Dashboard</a>
                             }
                             else
                             {
-                                <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                                <a class="nav-link text-dark" asp-page="/Index">Home</a>
                             }
                         </li>
                         <li class="nav-item">

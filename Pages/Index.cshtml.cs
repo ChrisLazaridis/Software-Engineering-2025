@@ -52,6 +52,11 @@ namespace SoftEng2025.Pages
             {
                 return RedirectToPage("/Entrepreneur/Index");
             }
+            if (!string.IsNullOrEmpty(userId) &&
+                await _db.Admins.AnyAsync(a => a.UserId == userId))
+            {
+                return RedirectToPage("/Admin/Index");
+            }
 
             // 1) assign incoming parameters
             Search = search;

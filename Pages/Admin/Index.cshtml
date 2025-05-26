@@ -1,0 +1,45 @@
+﻿@page
+@model SoftEng2025.Pages.Admin.IndexModel
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using SoftEng2025.Models
+@attribute [Authorize(Roles = "Admin")]
+
+@{
+    ViewData["Title"] = "Admin – Restaurants";
+}
+
+<h1>Recently Added Restaurants</h1>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Owner</th>
+        <th>Created At</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var r in Model.Recent)
+    {
+        <tr>
+            <td>@r.Name</td>
+            <td>@r.RestaurantType</td>
+            <td>@r.Entrepreneur.FirstName @r.Entrepreneur.LastName</td>
+            <td>@r.CreatedAt.ToString("g")</td>
+            <td>
+                <form method="post" class="d-inline">
+                    <input type="hidden" name="id" value="@r.RestaurantId" />
+                    <button asp-page-handler="Delete" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+                <form method="post" class="d-inline">
+                    <input type="hidden" name="id" value="@r.RestaurantId" />
+                    <button asp-page-handler="Flag" class="btn btn-warning btn-sm">Flag</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

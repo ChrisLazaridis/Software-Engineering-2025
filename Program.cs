@@ -35,7 +35,15 @@ builder.Services.Configure<PasswordHasherOptions>(opts =>
     // Match .NET 7’s default 100 000 rounds (override if you’ve changed it)
     opts.IterationCount = 100_000;
 });
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AuthorizeFolder("/Admin", "AdminOnly");
+});
 
+builder.Services.AddAuthorization(opts =>
+{
+    opts.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
+});
 // 4) Razor Pages, middleware, role‐seeding, etc.
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache(); // ← for caching geocoding results

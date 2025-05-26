@@ -1,0 +1,64 @@
+﻿@page
+@model SoftEng2025.Pages.Admin.ReviewsModel
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using SoftEng2025.Models
+@attribute [Authorize(Roles = "Admin")]
+
+@{
+    ViewData["Title"] = "Admin – Reviews";
+}
+
+<h1>Recent Reviews</h1>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Restaurant</th>
+        <th>Critic</th>
+        <th>Rating</th>
+        <th>Created At</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var r in Model.Reviews)
+    {
+        <tr>
+            <td>@r.Restaurant.Name</td>
+            <td>@r.Critic.Username</td>
+                <td>@r.Average</td>
+            <td>@r.CreatedAt.ToString("g")</td>
+            <td>
+                <form method="post">
+                    <input type="hidden" name="id" value="@r.ReviewId" />
+                    <button asp-page-handler="Delete" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<nav>
+    <ul class="pagination">
+        @if (Model.Page > 1)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-page="@(Model.Page - 1)">Previous</a>
+            </li>
+        }
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+            <li class="page-item @(i == Model.Page ? "active" : "")">
+                <a class="page-link" asp-route-page="@i">@i</a>
+            </li>
+        }
+        @if (Model.Page < Model.TotalPages)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-page="@(Model.Page + 1)">Next</a>
+            </li>
+        }
+    </ul>
+</nav>

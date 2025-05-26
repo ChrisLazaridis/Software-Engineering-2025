@@ -1,0 +1,53 @@
+﻿@page
+@model SoftEng2025.Pages.Admin.UsersModel
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using SoftEng2025.Models
+@attribute [Authorize(Roles = "Admin")]
+
+@{
+    ViewData["Title"] = "Admin – Users";
+}
+
+<h1>High-Activity Accounts</h1>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>User</th>
+        <th>#Reviews</th>
+        <th>Recent Reviews</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var u in Model.TopUsers)
+    {
+        <tr>
+            <td>@u.critic.Username</td>
+            <td>@u.reviewCount</td>
+            <td>
+                <ul class="mb-0">
+                    @foreach (var rev in u.recent)
+                    {
+                        <li>@rev.Restaurant.Name (@rev.Average) on @rev.CreatedAt.ToString("g")</li>
+                    }
+                </ul>
+            </td>
+            <td>
+                <form method="post" class="mb-1">
+                    <input type="hidden" name="userId" value="@u.critic.UserId" />
+                    <button asp-page-handler="Delete" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+                <form method="post">
+                    <input type="hidden" name="userId" value="@u.critic.UserId" />
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="message" class="form-control" placeholder="Message..." />
+                        <button asp-page-handler="Flag" class="btn btn-warning">Flag</button>
+                    </div>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
