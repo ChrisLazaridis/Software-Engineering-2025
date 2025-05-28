@@ -64,4 +64,23 @@ namespace SoftEng2025.Models.Common
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
+    public interface INotification : ITrackable
+    {
+        int NotificationId { get; set; }
+        string Type { get; set; }
+    }
+    public interface IFavorite : ITrackable
+    {
+        // marker interface for favorites
+    }
+    public abstract class NotificationBase : INotification
+    {
+        public int NotificationId { get; set; }
+        public string Type { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+    public abstract class FavoriteBase : IFavorite
+    {
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
 }

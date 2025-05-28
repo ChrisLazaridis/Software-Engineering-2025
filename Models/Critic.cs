@@ -20,5 +20,9 @@ namespace SoftEng2025.Models
         public int Atmosphere { get; set; } = 1;
 
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+        // ← NEW: navigation for favorites
+        public ICollection<FavoriteRestaurant> FavoriteRestaurants { get; set; }
+            = new List<FavoriteRestaurant>();
     }
 }

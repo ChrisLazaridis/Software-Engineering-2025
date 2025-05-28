@@ -42,5 +42,9 @@ namespace SoftEng2025.Models
 
         public ICollection<RestaurantImage> Images { get; set; } = new List<RestaurantImage>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+        // ← NEW: navigation for who favorited this restaurant
+        public ICollection<FavoriteRestaurant> FavoritedBy { get; set; }
+            = new List<FavoriteRestaurant>();
     }
 }

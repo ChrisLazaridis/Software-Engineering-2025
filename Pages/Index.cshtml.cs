@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SoftEng2025.Data;
 using SoftEng2025.Models;
-using SoftEng2025.Services;    // <-- geocoding service namespace
+using SoftEng2025.Services;
 
 namespace SoftEng2025.Pages
 {
@@ -29,107 +29,143 @@ namespace SoftEng2025.Pages
             public int Id { get; set; }
             public string Name { get; set; }
             public string OwnerName { get; set; }
-            public string Address { get; set; }    // now holds the human-readable address
+            public string Address { get; set; }
             public string Type { get; set; }
             public double AverageRating { get; set; }
             public int ReviewCount { get; set; }
             public string ImageBase64 { get; set; }
         }
 
+        [BindProperty(SupportsGet = true)]
         public string Search { get; set; }
+
+        [BindProperty(SupportsGet = true)]
         public string FilterType { get; set; }
-        public int CurrentPage { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool OnlyFavorites { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int CurrentPage { get; set; } = 1;
+
         public List<RestaurantCard> Cards { get; set; }
         public int TotalPages { get; set; }
         public List<string> AllTypes { get; set; }
 
-        public async Task<IActionResult> OnGetAsync(string search, string filterType, int currentPage = 1)
+        public bool IsCritic { get; set; }
+        public List<int> FavoriteRestaurantIds { get; set; } = new();
+
+        public async Task<IActionResult> OnGetAsync()
         {
-            // 0) if Entrepreneur, redirect to their dashboard
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!string.IsNullOrEmpty(userId) &&
-                await _db.Entrepreneurs.AnyAsync(e => e.UserId == userId))
+            var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(uid))
             {
-                return RedirectToPage("/Entrepreneur/Index");
-            }
-            if (!string.IsNullOrEmpty(userId) &&
-                await _db.Admins.AnyAsync(a => a.UserId == userId))
-            {
-                return RedirectToPage("/Admin/Index");
+                if (await _db.Entrepreneurs.AnyAsync(e => e.UserId == uid))
+                    return RedirectToPage("/Entrepreneur/Index");
+                if (await _db.Admins.AnyAsync(a => a.UserId == uid))
+                    return RedirectToPage("/Admin/Index");
+
+                // load critic favorites early for filtering & ordering
+                var critic = await _db.Critics
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.UserId == uid);
+                if (critic != null)
+                {
+                    IsCritic = true;
+                    FavoriteRestaurantIds = await _db.FavoriteRestaurants
+                        .Where(fr => fr.CriticId == critic.CriticId)
+                        .Select(fr => fr.RestaurantId)
+                        .ToListAsync();
+                }
             }
 
-            // 1) assign incoming parameters
-            Search = search;
-            FilterType = filterType;
-            CurrentPage = currentPage;
-
-            // 2) build filter dropdown
             AllTypes = await _db.Restaurants
                                .Select(r => r.RestaurantType)
                                .Distinct()
                                .OrderBy(t => t)
                                .ToListAsync();
 
-            // 3) base query
-            var query = _db.Restaurants
-                           .Include(r => r.Entrepreneur)
-                           .Include(r => r.Images)
-                           .AsNoTracking()
-                           .OrderByDescending(r => r.AverageRating)
-                           .AsQueryable();
+            var qry = _db.Restaurants
+                         .Include(r => r.Entrepreneur)
+                         .Include(r => r.Images)
+                         .AsNoTracking()
+                         .AsQueryable();
 
-            // 4) apply search
             if (!string.IsNullOrWhiteSpace(Search))
-                query = query.Where(r => r.Name.Contains(Search));
+                qry = qry.Where(r => r.Name.Contains(Search));
 
-            // 5) apply type filter
             if (!string.IsNullOrWhiteSpace(FilterType))
-                query = query.Where(r => r.RestaurantType == FilterType);
+                qry = qry.Where(r => r.RestaurantType == FilterType);
 
-            // 6) pagination calculation
-            var totalCount = await query.CountAsync();
-            TotalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
+            if (OnlyFavorites && IsCritic)
+                qry = qry.Where(r => FavoriteRestaurantIds.Contains(r.RestaurantId));
+
+            // favorites-first ordering for critics
+            if (IsCritic)
+                qry = qry
+                    .OrderByDescending(r => FavoriteRestaurantIds.Contains(r.RestaurantId))
+                    .ThenByDescending(r => r.AverageRating);
+            else
+                qry = qry.OrderByDescending(r => r.AverageRating);
+
+            var total = await qry.CountAsync();
+            TotalPages = (int)Math.Ceiling(total / (double)PageSize);
             CurrentPage = Math.Clamp(CurrentPage, 1, Math.Max(TotalPages, 1));
 
-            // 7) fetch page of data
-            var pageData = await query
+            var pageData = await qry
                 .Skip((CurrentPage - 1) * PageSize)
                 .Take(PageSize)
                 .ToListAsync();
 
-            // 8) prepare the list of (lat, lon) pairs
-            var coords = pageData
-                .Select(r => (Lat: r.Location.Y, Lon: r.Location.X))
-                .ToList();
-
-            // 9) lookup all addresses in parallel
+            var coords = pageData.Select(r => (Lat: r.Location.Y, Lon: r.Location.X)).ToList();
             var addresses = await _geocoder.GetAddressesAsync(coords);
 
-            // 10) map entities to view models, injecting the resolved address
-            Cards = pageData
-                .Select((r, i) =>
-                {
-                    var normalized = Math.Min(r.AverageRating, 5.0);
-                    var rounded = Math.Round(normalized, 2);
+            Cards = pageData.Select((r, i) => new RestaurantCard
+            {
+                Id = r.RestaurantId,
+                Name = r.Name,
+                OwnerName = $"{r.Entrepreneur.FirstName} {r.Entrepreneur.LastName}",
+                Address = addresses[i],
+                Type = r.RestaurantType,
+                AverageRating = Math.Round(Math.Min(r.AverageRating, 5.0), 2),
+                ReviewCount = r.ReviewCount,
+                ImageBase64 = r.Images.FirstOrDefault() != null
+                    ? $"data:image/jpeg;base64,{Convert.ToBase64String(r.Images.First().ImageData)}"
+                    : null
+            }).ToList();
 
-                    return new RestaurantCard
-                    {
-                        Id = r.RestaurantId,
-                        Name = r.Name,
-                        OwnerName = $"{r.Entrepreneur.FirstName} {r.Entrepreneur.LastName}",
-                        Address = addresses[i],
-                        Type = r.RestaurantType,
-                        AverageRating = rounded,
-                        ReviewCount = r.ReviewCount,
-                        ImageBase64 = r.Images.FirstOrDefault() != null
-                            ? $"data:image/jpeg;base64,{Convert.ToBase64String(r.Images.First().ImageData)}"
-                            : null
-                    };
-                })
-                .ToList();
-
-            // finally render the page
             return Page();
+        }
+
+        public async Task<IActionResult> OnPostToggleFavoriteAsync(int restaurantId)
+        {
+            var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(uid)) return Forbid();
+
+            var critic = await _db.Critics.SingleOrDefaultAsync(c => c.UserId == uid);
+            if (critic == null) return Forbid();
+
+            var existing = await _db.FavoriteRestaurants.SingleOrDefaultAsync(fr =>
+                fr.CriticId == critic.CriticId && fr.RestaurantId == restaurantId);
+
+            if (existing != null)
+                _db.FavoriteRestaurants.Remove(existing);
+            else
+                _db.FavoriteRestaurants.Add(new FavoriteRestaurant
+                {
+                    CriticId = critic.CriticId,
+                    RestaurantId = restaurantId
+                });
+
+            await _db.SaveChangesAsync();
+
+            return RedirectToPage(new
+            {
+                search = Search,
+                filterType = FilterType,
+                onlyFavorites = OnlyFavorites,
+                currentPage = CurrentPage
+            });
         }
     }
 }
