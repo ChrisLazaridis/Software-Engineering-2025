@@ -152,37 +152,133 @@ CREATE TABLE "Review" (
     FOREIGN KEY ("CriticId")     REFERENCES "Critic"("CriticId")
 );
 
--- 4) Trigger for updating averages
+-- Entrepreneur notifications
+CREATE TABLE "EntrepreneurNotification" (
+  "NotificationId" SERIAL PRIMARY KEY,
+  "Type" VARCHAR(50) NOT NULL,
+  "UserId" VARCHAR(450) NOT NULL,
+  "ReviewId" INTEGER NOT NULL,
+  "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY ("UserId") REFERENCES "AspNetUsers"("Id") ON DELETE CASCADE,
+  FOREIGN KEY ("ReviewId") REFERENCES "Review"("ReviewId") ON DELETE CASCADE
+);
+
+-- Admin notifications
+CREATE TABLE "AdminNotification" (
+  "NotificationId" SERIAL PRIMARY KEY,
+  "Type" VARCHAR(50) NOT NULL,
+  "RestaurantId" INTEGER,
+  "ReviewId" INTEGER,
+  "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY ("RestaurantId") REFERENCES "Restaurant"("RestaurantId") ON DELETE CASCADE,
+  FOREIGN KEY ("ReviewId") REFERENCES "Review"("ReviewId") ON DELETE CASCADE,
+  CHECK (("RestaurantId" IS NOT NULL AND "ReviewId" IS NULL) OR ("ReviewId" IS NOT NULL AND "RestaurantId" IS NULL))
+);
+
+-- Update trigger function to handle INSERT, UPDATE, DELETE
 CREATE OR REPLACE FUNCTION update_restaurant_average()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
-    cnt            integer;
-    avg_val        numeric;
-    sigmoid_factor numeric;
+    cnt INTEGER;
+    avg_val NUMERIC;
+    sigmoid_factor NUMERIC;
+    rid INTEGER;
 BEGIN
-    -- Compute count and raw average of per-review averages
+    -- Determine restaurant id from NEW or OLD
+    IF (TG_OP = 'DELETE') THEN
+        rid := OLD."RestaurantId";
+    ELSE
+        rid := NEW."RestaurantId";
+    END IF;
+
+    -- Compute count and raw average
     SELECT COUNT(*), AVG("Average")
       INTO cnt, avg_val
     FROM "Review"
-    WHERE "RestaurantId" = NEW."RestaurantId";
+    WHERE "RestaurantId" = rid;
 
-    -- Plain logistic (0 < factor <= 1)
+    -- Logistic scaling
     sigmoid_factor := 1.0 / (1.0 + exp(-cnt));
 
-    -- Update restaurant, scaling average then clamping to 5.0
+    -- Update restaurant record
     UPDATE "Restaurant"
     SET
       "AverageRating" = LEAST(avg_val * sigmoid_factor, 5.0),
       "ReviewCount"   = cnt
-    WHERE "RestaurantId" = NEW."RestaurantId";
+    WHERE "RestaurantId" = rid;
+
+    -- Return the appropriate record
+    IF (TG_OP = 'DELETE') THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$;
+
+-- Replace trigger to fire on INSERT, UPDATE, DELETE
+DROP TRIGGER IF EXISTS trg_update_restaurant_avg ON "Review";
+CREATE TRIGGER trg_update_restaurant_avg
+  AFTER INSERT OR UPDATE OR DELETE ON "Review"
+  FOR EACH ROW
+  EXECUTE FUNCTION update_restaurant_average();
+
+-- Trigger for Entrepreneur notifications on new reviews
+CREATE OR REPLACE FUNCTION notify_entrepreneur_new_review()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+    ent_user_id VARCHAR(450);
+BEGIN
+    -- Find the entrepreneur's user id for this restaurant
+    SELECT "UserId" INTO ent_user_id
+    FROM "Restaurant" r
+    JOIN "Entrepreneur" e ON r."EntrepreneurId" = e."EntrepreneurId"
+    WHERE r."RestaurantId" = NEW."RestaurantId";
+
+    -- Insert notification
+    INSERT INTO "EntrepreneurNotification" ("Type", "UserId", "ReviewId")
+    VALUES ('Entrepreneur', ent_user_id, NEW."ReviewId");
 
     RETURN NEW;
 END;
 $$;
-CREATE TRIGGER trg_update_restaurant_avg
+
+DROP TRIGGER IF EXISTS trg_notify_entrepreneur_new_review ON "Review";
+CREATE TRIGGER trg_notify_entrepreneur_new_review
   AFTER INSERT ON "Review"
   FOR EACH ROW
-  EXECUTE FUNCTION update_restaurant_average();
+  EXECUTE FUNCTION notify_entrepreneur_new_review();
+
+-- Triggers for Admin notifications
+CREATE OR REPLACE FUNCTION notify_admin_new_review()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    INSERT INTO "AdminNotification" ("Type", "ReviewId")
+    VALUES ('review', NEW."ReviewId");
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_notify_admin_new_review ON "Review";
+CREATE TRIGGER trg_notify_admin_new_review
+  AFTER INSERT ON "Review"
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_admin_new_review();
+
+CREATE OR REPLACE FUNCTION notify_admin_new_restaurant()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    INSERT INTO "AdminNotification" ("Type", "RestaurantId")
+    VALUES ('restaurant', NEW."RestaurantId");
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_notify_admin_new_restaurant ON "Restaurant";
+CREATE TRIGGER trg_notify_admin_new_restaurant
+  AFTER INSERT ON "Restaurant"
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_admin_new_restaurant();
 
 
 -- Foreign-key relationship indexes
@@ -216,3 +312,21 @@ CREATE INDEX idx_restaurant_type ON "Restaurant"("RestaurantType");
 -- BRIN index on review timestamps for efficient range scans
 CREATE INDEX idx_review_createdat_brin ON "Review"
   USING BRIN("CreatedAt");
+-- Favorite restaurants
+CREATE TABLE "FavoriteRestaurant" (
+  "CriticId" INTEGER NOT NULL,
+  "RestaurantId" INTEGER NOT NULL,
+  "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("CriticId","RestaurantId"),
+  FOREIGN KEY ("CriticId") REFERENCES "Critic"("CriticId") ON DELETE CASCADE,
+  FOREIGN KEY ("RestaurantId") REFERENCES "Restaurant"("RestaurantId") ON DELETE CASCADE
+);
+
+CREATE INDEX idx_favoriterestaurant_criticid  ON "FavoriteRestaurant"("CriticId");
+CREATE INDEX idx_favoriterestaurant_restaurantid ON "FavoriteRestaurant"("RestaurantId");
+
+-- Indexes for notifications
+CREATE INDEX idx_entreprenotification_userid     ON "EntrepreneurNotification"("UserId");
+CREATE INDEX idx_entreprenotification_reviewid   ON "EntrepreneurNotification"("ReviewId");
+CREATE INDEX idx_adminnotification_restaurantid  ON "AdminNotification"("RestaurantId");
+CREATE INDEX idx_adminnotification_reviewid      ON "AdminNotification"("ReviewId");
