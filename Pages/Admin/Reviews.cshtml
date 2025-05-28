@@ -7,58 +7,108 @@
 
 @{
     ViewData["Title"] = "Admin – Reviews";
+
+    // --- pagination window setup ---
+    const int maxSlots = 6;
+    int startPage = 1;
+    int endPage = Model.TotalPages;
+
+    if (Model.TotalPages > maxSlots)
+    {
+        int half = maxSlots / 2;
+
+        if (Model.CurrentPage <= half)
+        {
+            // near the start
+            startPage = 1;
+            endPage = maxSlots;
+        }
+        else if (Model.CurrentPage + half >= Model.TotalPages)
+        {
+            // near the end
+            endPage = Model.TotalPages;
+            startPage = Model.TotalPages - maxSlots + 1;
+        }
+        else
+        {
+            // somewhere in the middle
+            startPage = Model.CurrentPage - half + 1;
+            endPage = startPage + maxSlots - 1;
+        }
+    }
 }
 
-<h1>Recent Reviews</h1>
-
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>Restaurant</th>
-        <th>Critic</th>
-        <th>Rating</th>
-        <th>Created At</th>
-        <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var r in Model.Reviews)
-    {
-        <tr>
-            <td>@r.Restaurant.Name</td>
-            <td>@r.Critic.Username</td>
-                <td>@r.Average</td>
-            <td>@r.CreatedAt.ToString("g")</td>
-            <td>
-                <form method="post">
-                    <input type="hidden" name="id" value="@r.ReviewId" />
-                    <button asp-page-handler="Delete" class="btn btn-danger btn-sm">Delete</button>
-                </form>
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
-
-<nav>
-    <ul class="pagination">
-        @if (Model.Page > 1)
-        {
-            <li class="page-item">
-                <a class="page-link" asp-route-page="@(Model.Page - 1)">Previous</a>
-            </li>
-        }
-        @for (int i = 1; i <= Model.TotalPages; i++)
-        {
-            <li class="page-item @(i == Model.Page ? "active" : "")">
-                <a class="page-link" asp-route-page="@i">@i</a>
-            </li>
-        }
-        @if (Model.Page < Model.TotalPages)
-        {
-            <li class="page-item">
-                <a class="page-link" asp-route-page="@(Model.Page + 1)">Next</a>
-            </li>
-        }
-    </ul>
-</nav>
+<div class="card mb-4 box-shadow">
+    <div class="card-header">
+        <h1 class="h5 mb-0">Recent Reviews</h1>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Restaurant</th>
+                    <th>Critic</th>
+                    <th>Rating</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Reviews)
+                {
+                    <tr>
+                        <td>@r.Restaurant.Name</td>
+                        <td>@r.Critic.Username</td>
+                        <td>@r.Average</td>
+                        <td>@r.CreatedAt.ToString("g")</td>
+                        <td>
+                            <form method="post">
+                                <input type="hidden" name="id" value="@r.ReviewId" />
+                                <button asp-page-handler="Delete" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer">
+        <nav class="mb-0">
+            <ul class="pagination mb-0">
+                @* Previous button *@
+                @if (Model.CurrentPage > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link"
+                           asp-page="/Admin/Reviews"
+                           asp-route-CurrentPage="@(Model.CurrentPage - 1)">
+                            Previous
+                        </a>
+                    </li>
+                }
+                @* Sliding window of page numbers *@
+                @for (int i = startPage; i <= endPage; i++)
+                {
+                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link"
+                           asp-page="/Admin/Reviews"
+                           asp-route-CurrentPage="@i">
+                            @i
+                        </a>
+                    </li>
+                }
+                @* Next button *@
+                @if (Model.CurrentPage < Model.TotalPages)
+                {
+                    <li class="page-item">
+                        <a class="page-link"
+                           asp-page="/Admin/Reviews"
+                           asp-route-CurrentPage="@(Model.CurrentPage + 1)">
+                            Next
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    </div>
+</div>

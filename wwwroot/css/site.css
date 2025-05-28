@@ -171,3 +171,9 @@ body {
     .dark .navbar .dropdown-item:hover {
         background-color: var(--card-border) !important;
     }
+
+.table,
+.table th,
+.table td {
+  color: var(--card-text) !important;
+}

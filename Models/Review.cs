@@ -1,24 +1,24 @@
-﻿using System;
+﻿// --- Models/Review.cs ---
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using SoftEng2025.Models.Common;
 
 namespace SoftEng2025.Models
 {
     [Table("Review")]
-    public class Review
+    public class Review : ITrackable
     {
         [Key]
         public int ReviewId { get; set; }
 
         [Required]
         public int RestaurantId { get; set; }
-
         [ForeignKey(nameof(RestaurantId))]
         public Restaurant Restaurant { get; set; }
 
         [Required]
         public int CriticId { get; set; }
-
         [ForeignKey(nameof(CriticId))]
         public Critic Critic { get; set; }
 

@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SoftEng2025.Data;
 using SoftEng2025.Models;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -30,11 +29,31 @@ namespace SoftEng2025.Pages.Admin
 
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
-            var entity = await _db.Restaurants.FindAsync(id);
-            if (entity == null) return NotFound();
+            // Load restaurant with its children
+            var restaurant = await _db.Restaurants
+                .Include(r => r.Images)   // navigation property ICollection<RestaurantImage> :contentReference[oaicite:0]{index=0}
+                .Include(r => r.Reviews)  // navigation property ICollection<Review> :contentReference[oaicite:1]{index=1}
+                .FirstOrDefaultAsync(r => r.RestaurantId == id);
 
-            _db.Restaurants.Remove(entity);
-            await _db.SaveChangesAsync();
+            if (restaurant == null)
+                return NotFound();
+
+            // Delete all associated images
+            if (restaurant.Images.Any())
+            {
+                _db.RestaurantImages.RemoveRange(restaurant.Images);
+            }
+
+            // Delete all associated reviews
+            if (restaurant.Reviews.Any())
+            {
+                _db.Reviews.RemoveRange(restaurant.Reviews);
+            }
+
+            // Finally, delete the restaurant
+            _db.Restaurants.Remove(restaurant);
+
+            await _db.SaveChangesAsync();  // will cascade to FK tables safely :contentReference[oaicite:2]{index=2}
 
             return RedirectToPage();
         }

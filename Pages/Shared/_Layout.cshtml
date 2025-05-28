@@ -4,6 +4,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SoftEng2025</title>
+
     <!-- 1. Bootstrap core CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
@@ -31,8 +35,11 @@
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
                 <a class="navbar-brand" asp-area="" asp-page="/Index">SoftEng2025</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
-                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
@@ -41,28 +48,39 @@
                         @{
                             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                             var isEnt = !string.IsNullOrEmpty(userId)
-                                        && _db.Entrepreneurs.Any(e => e.UserId == userId);
-                            var isAdmin = !string.IsNullOrEmpty(userId) &&
-                                          _db.Admins.Any(a => a.UserId == userId);
+                            && _db.Entrepreneurs.Any(e => e.UserId == userId);
+                            var isAdmin = !string.IsNullOrEmpty(userId)
+                            && _db.Admins.Any(a => a.UserId == userId);
                         }
+
+                        @* Admin links, each in its own nav-item *@
+                        @if (isAdmin)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Admin/Index">Restaurants</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Admin/Reviews">Reviews</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Admin/Users">Users</a>
+                            </li>
+                        }
+                        else if (isEnt)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Entrepreneur/Index">My Dashboard</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Index">Home</a>
+                            </li>
+                        }
+
                         <li class="nav-item">
-                            @if (isAdmin)
-                            {
-                                <a class="nav-link text-dark" asp-page="/Admin/Index">Admin</a>
-                                <a class="nav-link text-dark" asp-page="/Admin/Reviews">Reviews</a>
-                                <a class="nav-link text-dark" asp-page="/Admin/Users">Users</a>
-                            }
-                            else if (isEnt)
-                            {
-                                <a class="nav-link text-dark" asp-page="/Entrepreneur/Index">My Dashboard</a>
-                            }
-                            else
-                            {
-                                <a class="nav-link text-dark" asp-page="/Index">Home</a>
-                            }
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
+                            <a class="nav-link" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
                     </ul>
 
@@ -101,7 +119,7 @@
     <script src="~/bootstrap-material-design/dist/js/bootstrap-material-design.min.js"></script>
     <script>
         $(function() {
-          $('body').bootstrapMaterialDesign();
+            $('body').bootstrapMaterialDesign();
         });
     </script>
 

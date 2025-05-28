@@ -1,20 +1,23 @@
-﻿using System;
+﻿// --- Models/Restaurant.cs ---
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using NetTopologySuite.Geometries;
+using SoftEng2025.Models.Common;
 
 namespace SoftEng2025.Models
 {
     [Table("Restaurant")]
-    public class Restaurant
+    public class Restaurant : ITrackable,
+        IImageContainer<RestaurantImage>,
+        IReviewable<Review>
     {
         [Key]
         public int RestaurantId { get; set; }
 
         [Required]
         public int EntrepreneurId { get; set; }
-
         [ForeignKey(nameof(EntrepreneurId))]
         public Entrepreneur Entrepreneur { get; set; }
 
@@ -34,6 +37,7 @@ namespace SoftEng2025.Models
 
         public double AverageRating { get; set; } = 0;
         public int ReviewCount { get; set; } = 0;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<RestaurantImage> Images { get; set; } = new List<RestaurantImage>();

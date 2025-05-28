@@ -19,15 +19,18 @@ namespace SoftEng2025.Pages.Admin
 
         public ReviewsModel(ApplicationDbContext db) => _db = db;
 
-        [BindProperty(SupportsGet = true)]
-        public int Page { get; set; }
+        // Renamed from Page to CurrentPage
+        [BindProperty(SupportsGet = true, Name = "CurrentPage")]
+        public int CurrentPage { get; set; }
 
         public int TotalPages { get; set; }
         public IList<Review> Reviews { get; set; }
 
-        public async Task OnGetAsync(int page = 1)
+        // Rename parameter and default
+        public async Task OnGetAsync(int CurrentPage = 1)
         {
-            Page = page;
+            this.CurrentPage = CurrentPage;
+
             var query = _db.Reviews
                 .Include(r => r.Restaurant)
                 .Include(r => r.Critic)
@@ -37,7 +40,7 @@ namespace SoftEng2025.Pages.Admin
             TotalPages = (int)Math.Ceiling(total / (double)PageSize);
 
             Reviews = await query
-                .Skip((Page - 1) * PageSize)
+                .Skip((this.CurrentPage - 1) * PageSize)
                 .Take(PageSize)
                 .AsNoTracking()
                 .ToListAsync();
@@ -51,7 +54,8 @@ namespace SoftEng2025.Pages.Admin
             _db.Reviews.Remove(review);
             await _db.SaveChangesAsync();
 
-            return RedirectToPage(new { page = Page });
+            // Redirect back, preserving CurrentPage
+            return RedirectToPage("/Admin/Reviews", new { CurrentPage = this.CurrentPage });
         }
     }
 }
