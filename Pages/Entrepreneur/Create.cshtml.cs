@@ -52,6 +52,7 @@ namespace SoftEng2025.Pages.Entrepreneur
 
             // 2) Lookup entrepreneur
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Console.WriteLine($"User ID: {userId}");
             var ent = await _db.Entrepreneurs
                                .FirstOrDefaultAsync(e => e.UserId == userId);
             if (ent == null) return Forbid();
@@ -65,16 +66,13 @@ namespace SoftEng2025.Pages.Entrepreneur
             // 4) Strip out the one nested validation
             ModelState.Remove("Restaurant.Entrepreneur.User");
 
-            // 5) Re-validate only Restaurant
-            ModelState.Clear();
-            if (!TryValidateModel(Restaurant, nameof(Restaurant)))
-                return Page();
+          
 
-            // 6) Save
+            // 5) Save
             _db.Restaurants.Add(Restaurant);
             await _db.SaveChangesAsync();
 
-            // 7) Optional image
+            // 6) Optional image
             if (ImageFile != null && ImageFile.Length > 0)
             {
                 using var ms = new MemoryStream();

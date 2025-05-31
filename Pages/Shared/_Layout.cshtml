@@ -46,6 +46,7 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         @{
+                            // Determine the logged‐in user’s ID, and if they are Entrepreneur / Admin
                             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                             var isEnt = !string.IsNullOrEmpty(userId)
                             && _db.Entrepreneurs.Any(e => e.UserId == userId);
@@ -53,7 +54,7 @@
                             && _db.Admins.Any(a => a.UserId == userId);
                         }
 
-                        @* Admin links, each in its own nav-item *@
+                        @* Admin links *@
                         @if (isAdmin)
                         {
                             <li class="nav-item">
@@ -83,6 +84,134 @@
                             <a class="nav-link" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
                     </ul>
+
+                    @* ========== NOTIFICATION DROPDOWN ========== *@
+                    @if (!string.IsNullOrEmpty(userId) && (isEnt || isAdmin))
+                    {
+                        <ul class="navbar-nav align-items-center">
+
+                            <li class="nav-item dropdown">
+                                @* The bell icon (you can swap for any Material icon) *@
+                                <a class="nav-link dropdown-toggle position-relative" href="#"
+                                   id="notificationDropdown"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+                                    <span class="material-icons">notifications</span>
+                                    @{
+                                        // Show a badge if there are any unread notifications
+                                        int notiCount = 0;
+                                        if (isEnt)
+                                        {
+                                            notiCount = _db.EntrepreneurNotifications
+                                            .Count(n => n.UserId == userId);
+                                        }
+                                        else if (isAdmin)
+                                        {
+                                            notiCount = _db.AdminNotifications.Count();
+                                        }
+                                    }
+                                    @if (notiCount > 0)
+                                    {
+                                        <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">
+                                            @notiCount
+                                        </span>
+                                    }
+                                </a>
+
+                                <div class="dropdown-menu dropdown-menu-end"
+                                     aria-labelledby="notificationDropdown"
+                                     style="min-width: 300px;">
+                                    <h6 class="dropdown-header">Notifications</h6>
+
+                                    @{
+                                        if (isEnt)
+                                        {
+                                            // Fetch entrepreneur notifications (latest first)
+                                            var myNotis = _db.EntrepreneurNotifications
+                                            .Where(n => n.UserId == userId)
+                                            .OrderByDescending(n => n.CreatedAt)
+                                            .ToList();
+                                            if (myNotis.Count == 0)
+                                            {
+                                                <span class="dropdown-item-text text-muted">
+                                                    No new notifications
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                foreach (var noti in myNotis)
+                                                {
+                                                    <div class="dropdown-item d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <strong>@noti.Type</strong><br />
+                                                            <small class="text-muted">
+                                                                @noti.CreatedAt.ToLocalTime().ToString("g")
+                                                            </small>
+                                                            <br />
+                                                            @* You can inject more context, e.g. @noti.Review.Restaurant.Name *@
+                                                        </div>
+                                                        <form method="post"
+                                                              asp-page="/Entrepreneur/DeleteNotification"
+                                                              asp-route-id="@noti.NotificationId"
+                                                              class="ms-2">
+                                                            <button type="submit"
+                                                                    class="btn btn-sm btn-outline-secondary"
+                                                                    title="Dismiss">
+                                                                &#x2715;
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                    <div class="dropdown-divider"></div>
+                                                }
+                                            }
+                                        }
+                                        else if (isAdmin)
+                                        {
+                                            // Fetch admin notifications (latest first)
+                                            var adminNotis = _db.AdminNotifications
+                                            .OrderByDescending(n => n.CreatedAt)
+                                            .ToList();
+                                            if (adminNotis.Count == 0)
+                                            {
+                                                <span class="dropdown-item-text text-muted">
+                                                    No new notifications
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                foreach (var noti in adminNotis)
+                                                {
+                                                    <div class="dropdown-item d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <strong>@noti.Type</strong><br />
+                                                            <small class="text-muted">
+                                                                @noti.CreatedAt.ToLocalTime().ToString("g")
+                                                            </small>
+                                                            <br />
+                                                            @* You can inject context, e.g. if noti.Restaurant != null, show @noti.Restaurant.Name *@
+                                                        </div>
+                                                        <form method="post"
+                                                              asp-page="/Admin/DeleteNotification"
+                                                              asp-route-id="@noti.NotificationId"
+                                                              class="ms-2">
+                                                            <button type="submit"
+                                                                    class="btn btn-sm btn-outline-secondary"
+                                                                    title="Dismiss">
+                                                                &#x2715;
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                    <div class="dropdown-divider"></div>
+                                                }
+                                            }
+                                        }
+                                    }
+                                </div>
+                            </li>
+
+                        </ul>
+                    }
 
                     <button id="theme-toggle"
                             class="btn btn-outline-secondary"
