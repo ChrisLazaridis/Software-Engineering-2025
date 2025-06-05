@@ -107,10 +107,55 @@
     <script>
         (function() {
             const steps = document.querySelector('.steps-container');
-            document.getElementById('next1').onclick = () => steps.style.transform = 'translateX(-33.3333%)';
-            document.getElementById('back2').onclick = () => steps.style.transform = 'translateX(0)';
-            document.getElementById('next2').onclick = () => steps.style.transform = 'translateX(-66.6666%)';
-            document.getElementById('back3').onclick = () => steps.style.transform = 'translateX(-33.3333%)';
+            const nameInput = document.getElementById('Restaurant_Name');
+
+            // STEP 1 → STEP 2
+            document.getElementById('next1').onclick = () => {
+                steps.style.transform = 'translateX(-33.3333%)';
+            };
+
+            // STEP 2 → STEP 3 (only if Name is not empty)
+            document.getElementById('next2').onclick = () => {
+                // Trim whitespace and check if non-empty
+                if (!nameInput.value.trim()) {
+                    // Show client-side error (you can also focus the field)
+                    nameInput.classList.add('is-invalid');
+                    // Optionally set a custom validation message underneath
+                    const errorSpan = nameInput.nextElementSibling;
+                    if (errorSpan) {
+                        errorSpan.textContent = 'Restaurant name is required before proceeding.';
+                    }
+                    nameInput.focus();
+                } else {
+                    // Clear any previous invalid state
+                    nameInput.classList.remove('is-invalid');
+                    if (nameInput.nextElementSibling) {
+                        nameInput.nextElementSibling.textContent = '';
+                    }
+                    // Advance to Step 3
+                    steps.style.transform = 'translateX(-66.6666%)';
+                }
+            };
+
+            // STEP 2 ← STEP 1
+            document.getElementById('back2').onclick = () => {
+                steps.style.transform = 'translateX(0)';
+            };
+
+            // STEP 3 ← STEP 2
+            document.getElementById('back3').onclick = () => {
+                steps.style.transform = 'translateX(-33.3333%)';
+            };
+
+            // Optional: remove invalid styling once the user starts typing
+            nameInput.addEventListener('input', () => {
+                if (nameInput.value.trim()) {
+                    nameInput.classList.remove('is-invalid');
+                    if (nameInput.nextElementSibling) {
+                        nameInput.nextElementSibling.textContent = '';
+                    }
+                }
+            });
         })();
     </script>
 }

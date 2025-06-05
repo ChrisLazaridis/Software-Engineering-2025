@@ -53,8 +53,7 @@ namespace SoftEng2025.Areas.Identity.Pages.Account
             public List<SelectListItem> AccountTypes { get; } = new()
             {
                 new SelectListItem("Critic",      "Critic"),
-                new SelectListItem("Entrepreneur","Entrepreneur"),
-                new SelectListItem("Admin",       "Admin")
+                new SelectListItem("Entrepreneur","Entrepreneur")
             };
 
             [Required, StringLength(100, MinimumLength = 6)]
